@@ -21,16 +21,30 @@ const required=['experiment-processing.js','signal-analysis.js','signal-live.js'
 for(const f of required)if(!scripts.includes(f))fail(`required module is not loaded: ${f}`);
 
 const declarations=[['experiment-processing.js',['m3','m5']],['signal-analysis.js',['m1x','mfft','mpostx']],['montage.js',['m2x']],['ica.js',['mica']],['storage.js',['mformats','mbids']],['clinical.js',['mlobes','mclinical']],['qeeg-workflow.js',['mqeeg']],['qeeg-heatmap.js',['mheat']],['quiz.js',['mquiz']],['live-modules.js',['msimlive2','mphys2','meye2']],['source-model.js',['m7']]];
-for(const[file,ids]of declarations){const text=read(file);for(const id of ids)if(!text.includes(`id='${id}'`)&&!text.includes(`id="${id}"`))fail(`${file} does not declare #${id}`)}
+const declaredIds=new Set();
+for(const[file,ids]of declarations){const text=read(file);for(const id of ids){declaredIds.add(id);if(!text.includes(`id='${id}'`)&&!text.includes(`id="${id}"`))fail(`${file} does not declare #${id}`)}}
 
 const iface=read('interface.js');
 for(const group of ['Sygnał','Pomiar','Eksperyment','Przetwarzanie','Analiza','Zapis'])if(!iface.includes(`name:'${group}'`))fail(`navigation group missing: ${group}`);
 if(!iface.includes("navigate('m1x')"))fail('application does not start on EEG signal');
 if(!iface.includes("['mstroop','Eksperyment Stroopa']"))fail('Stroop experiment missing from navigation');
+const navIds=[...iface.matchAll(/\['(m[a-zA-Z0-9]+)'\s*,\s*'[^']+'\]/g)].map(m=>m[1]);
+for(const id of navIds)if(id!=='mstroop'&&!declaredIds.has(id))fail(`navigation points to undeclared module #${id}`);
+for(const id of declaredIds)if(!navIds.includes(id))fail(`declared module #${id} is missing from navigation`);
 if(/const\s+NAV\s*=/.test(read('signal-live.js')))fail('signal-live.js must not own navigation');
 if(/nav\.innerHTML/.test(read('signal-live.js')))fail('signal-live.js modifies navigation');
 if(!read('signal-live.js').includes("active==='m1x'"))fail('live EEG renderer does not handle m1x');
-if(!read('storage.js').includes("id='mformats'")||!read('storage.js').includes("id='mbids'"))fail('storage module is incomplete');
+
+const storage=read('storage.js');
+if(!storage.includes("id='mformats'")||!storage.includes("id='mbids'"))fail('storage module is incomplete');
+if(!storage.includes('BV_SAMPLING_INTERVAL_US=Math.round(1e6/BV_FS)'))fail('BrainVision sampling interval is not derived from sampling frequency');
+if(!storage.includes('NumberOfChannels=${BV_CHANNELS.length}'))fail('BrainVision channel count is not derived from the data channels');
+if(!storage.includes("BIDSVersion:'1.10.1'"))fail('example BIDS dataset description lacks an explicit BIDS version');
+
+const labs=read('laboratories.html');
+const labLinks=[...labs.matchAll(/href=["']\.\/laboratories\/([^"']+\.pdf)["']/g)].map(m=>m[1]);
+if(labLinks.length!==6)fail(`expected 6 laboratory PDFs in laboratories.html, found ${labLinks.length}`);
+for(const pdf of labLinks)if(!fs.existsSync(path.resolve('laboratories',pdf)))fail(`laboratory link points to missing PDF: ${pdf}`);
 
 const versioned=fs.readdirSync(root).filter(f=>/-v\d+\.(?:js|css)$/.test(f));
 if(versioned.length)fail(`historical version suffixes remain: ${versioned.join(', ')}`);
