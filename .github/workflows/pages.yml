@@ -45,7 +45,11 @@ jobs:
           set -euo pipefail
           rm -rf _site
           mkdir -p _site/laboratories
-          find simulator -maxdepth 1 -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \) -exec cp {} _site/ \;
+          find simulator -maxdepth 1 -type f \( \
+            -name '*.html' -o -name '*.css' -o -name '*.js' -o \
+            -name '*.svg' -o -name '*.png' -o -name '*.jpg' -o \
+            -name '*.jpeg' -o -name '*.webp' -o -name '*.ico' \
+          \) -exec cp {} _site/ \;
           find laboratories -maxdepth 1 -type f -name '*.pdf' -exec cp {} _site/laboratories/ \;
           touch _site/.nojekyll
 
@@ -56,6 +60,8 @@ jobs:
           test -f _site/index.html
           test -f _site/interface.js
           test -f _site/signal.js
+          test -f _site/logo.svg
+          test -f _site/favicon.svg
           test -f _site/laboratories.html
           test -n "$(find _site/laboratories -maxdepth 1 -type f -name '*.pdf' -print -quit)"
 
