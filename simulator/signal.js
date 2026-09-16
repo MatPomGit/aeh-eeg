@@ -13,11 +13,43 @@ export const ELECTRODES=[
 {id:'O1',x:75,y:168,region:'occipital'},{id:'O2',x:125,y:168,region:'occipital'}];
 
 export class EEGEngine{
- constructor(){this.fs=250;this.seconds=8;this.eyesClosed=true;this.reference='average';this.alphaPeak=rand(9.2,10.8);this.noise=8;this.lineNoise=4;this.artifacts=[];this.phase=new Map();for(const e of ELECTRODES)this.phase.set(e.id,[rand(0,6.28),rand(0,6.28),rand(0,6.28),rand(0,6.28)]);this.badChannels=new Set();}
+ constructor(){
+  this.fs=250;this.seconds=8;this.eyesClosed=true;this.reference='average';this.alphaPeak=rand(9.2,10.8);
+  this.noise=8;this.lineNoise=4;this.bands={delta:45,theta:38,alpha:62,beta:34,gamma:18};
+  this.artifacts=[];this.phase=new Map();this.badChannels=new Set();
+  for(const e of ELECTRODES)this.phase.set(e.id,[rand(0,6.28),rand(0,6.28),rand(0,6.28),rand(0,6.28),rand(0,6.28)]);
+ }
  setFs(v){this.fs=Number(v)}
+ setBand(name,value){if(name in this.bands)this.bands[name]=clamp(Number(value),0,100)}
  artifact(type){this.artifacts.push({type,t0:performance.now()/1000})}
- sample(e,t){const p=this.phase.get(e.id);const occ=e.region==='occipital'?1:0;const par=e.region==='parietal'?1:0;const front=e.region==='frontal'?1:0;const alphaEnv=(.65+.35*Math.sin(2*Math.PI*.18*t+p[0]))*(this.eyesClosed?(1+1.7*occ+.6*par):(.6+.2*occ));let v=0;v+=10*Math.sin(2*Math.PI*2.1*t+p[0]);v+=7*Math.sin(2*Math.PI*6.2*t+p[1]);v+=13*alphaEnv*Math.sin(2*Math.PI*this.alphaPeak*t+p[2]);v+=5*(1+.35*front)*Math.sin(2*Math.PI*19*t+p[3]);v+=this.lineNoise*Math.sin(2*Math.PI*50*t);v+=this.pinkish(t,e.id)*this.noise;const now=performance.now()/1000;for(const a of this.artifacts){const d=now-a.t0;if(d<0||d>2)continue;if(a.type==='blink'&&front)v+=95*gauss(d,.24,.09);if(a.type==='emg')v+=(front?1:.35)*rand(-40,40)*Math.exp(-d/1.1);if(a.type==='move')v+=65*Math.exp(-d/.7);}if(this.badChannels.has(e.id))v+=rand(-65,65);return v}
- pinkish(t,id){const n=Math.sin(2*Math.PI*.7*t+id.length)+.65*Math.sin(2*Math.PI*3.1*t+id.charCodeAt(0))+.35*Math.sin(2*Math.PI*17*t);return n+rand(-.55,.55)}
+ sample(e,t){
+  const p=this.phase.get(e.id),occ=e.region==='occipital'?1:0,par=e.region==='parietal'?1:0,front=e.region==='frontal'?1:0,temp=e.region==='temporal'?1:0;
+  const b=this.bands,alphaEnv=(.65+.35*Math.sin(2*Math.PI*.18*t+p[0]))*(this.eyesClosed?(1+1.7*occ+.6*par):(.58+.18*occ));
+  let v=0;
+  v+=(b.delta/100)*20*Math.sin(2*Math.PI*2.1*t+p[0]);
+  v+=(b.theta/100)*16*Math.sin(2*Math.PI*6.2*t+p[1]);
+  v+=(b.alpha/100)*23*alphaEnv*Math.sin(2*Math.PI*this.alphaPeak*t+p[2]);
+  v+=(b.beta/100)*15*(1+.35*front)*Math.sin(2*Math.PI*19*t+p[3]);
+  v+=(b.gamma/100)*7*(1+.35*temp)*Math.sin(2*Math.PI*38*t+p[4]);
+  v+=this.lineNoise*Math.sin(2*Math.PI*50*t)+this.pinkish(t,e.id)*this.noise;
+  const now=performance.now()/1000;
+  for(const a of this.artifacts){
+   const d=now-a.t0;if(d<0||d>3)continue;
+   if(a.type==='blink'&&front)v+=105*gauss(d,.24,.09);
+   if(a.type==='saccade'&&front)v+=(e.id.endsWith('1')||e.id==='F7'?-1:1)*65*gauss(d,.28,.16);
+   if(a.type==='emg')v+=(front||temp?1:.25)*rand(-46,46)*Math.exp(-d/1.1);
+   if(a.type==='jaw')v+=(temp?1:.35)*rand(-58,58)*Math.exp(-d/.8)*Math.sin(2*Math.PI*rand(35,70)*t);
+   if(a.type==='move')v+=70*Math.exp(-d/.7)*(1+.2*Math.sin(2*Math.PI*3*t));
+   if(a.type==='cable')v+=32*Math.sin(2*Math.PI*7*t)*Math.exp(-d/1.5);
+   if(a.type==='pop')v+=(d<.08?120:35*Math.exp(-d/.6))*(e.id==='Fp1'||e.id==='F7'?1:.15);
+   if(a.type==='ecg')v+=(front?4:8)*(gauss(d%0.85,.08,.025)-.35*gauss(d%0.85,.18,.04));
+   if(a.type==='sweat')v+=24*Math.sin(2*Math.PI*.18*t)*Math.exp(-d/2.8);
+   if(a.type==='lineburst')v+=24*Math.sin(2*Math.PI*50*t)*Math.exp(-d/1.4);
+  }
+  if(this.badChannels.has(e.id))v+=rand(-65,65);
+  return v;
+ }
+ pinkish(t,id){return Math.sin(2*Math.PI*.7*t+id.length)+.65*Math.sin(2*Math.PI*3.1*t+id.charCodeAt(0))+.35*Math.sin(2*Math.PI*17*t)+rand(-.55,.55)}
  generate(seconds=this.seconds){const n=Math.round(seconds*this.fs),out={};for(const e of ELECTRODES){const a=new Array(n);for(let i=0;i<n;i++)a[i]=this.sample(e,i/this.fs);out[e.id]=a}return this.rereference(out)}
  rereference(data){const ids=Object.keys(data),n=data[ids[0]].length,res={};if(this.reference==='Cz'){const ref=data.Cz;for(const id of ids)res[id]=data[id].map((v,i)=>v-ref[i]);return res}if(this.reference==='mastoids'){const pseudo=data.T7.map((v,i)=>(v+data.T8[i])/2);for(const id of ids)res[id]=data[id].map((v,i)=>v-pseudo[i]);return res}for(const id of ids)res[id]=new Array(n);for(let i=0;i<n;i++){const m=mean(ids.map(id=>data[id][i]));for(const id of ids)res[id][i]=data[id][i]-m}return res}
  qc(impedances={}){const vals=ELECTRODES.map(e=>impedances[e.id]??12);const bad=ELECTRODES.filter(e=>(impedances[e.id]??12)>20||this.badChannels.has(e.id)).map(e=>e.id);return{median:[...vals].sort((a,b)=>a-b)[Math.floor(vals.length/2)],bad,line:this.lineNoise,clipping:bad.length>2,ready:bad.length===0&&mean(vals)<15&&this.lineNoise<8}}
@@ -30,4 +62,4 @@ export function makeEpoch(isTarget,noise=7,latency=340){const fs=500,n=500,arr=[
 export function baselineCorrect(epoch,fs=500){const n=Math.round(.2*fs),b=mean(epoch.slice(0,n));return epoch.map(v=>v-b)}
 export function averageEpochs(epochs){if(!epochs.length)return[];return epochs[0].map((_,i)=>mean(epochs.map(e=>e[i])))}
 export function semEpochs(epochs){if(!epochs.length)return[];return epochs[0].map((_,i)=>sd(epochs.map(e=>e[i]))/Math.sqrt(epochs.length))}
-export function aliasFrequency(f,fs){const ny=fs/2;let a=Math.abs(((f+ny)%fs)-ny);return Number(a.toFixed(2))}
+export function aliasFrequency(f,fs){const ny=fs/2;return Number(Math.abs(((f+ny)%fs)-ny).toFixed(2))}
