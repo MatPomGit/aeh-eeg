@@ -62,8 +62,9 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf _site
-          mkdir -p _site
+          mkdir -p _site/laboratories
           cp simulator/index.html _site/index.html
+          cp simulator/laboratories.html _site/laboratories.html
           cp simulator/app.css _site/app.css
           cp simulator/enhancements.css _site/enhancements.css
           cp simulator/enhancements2.css _site/enhancements2.css
@@ -76,6 +77,7 @@ jobs:
           cp simulator/layout-fixes-v3.css _site/layout-fixes-v3.css
           cp simulator/structure-v4.css _site/structure-v4.css
           cp simulator/post-ica-v5.css _site/post-ica-v5.css
+          cp simulator/laboratories.css _site/laboratories.css
           cp simulator/app.js _site/app.js
           cp simulator/enhancements.js _site/enhancements.js
           cp simulator/enhancements2.js _site/enhancements2.js
@@ -97,6 +99,7 @@ jobs:
           cp simulator/structure-v4.js _site/structure-v4.js
           cp simulator/post-ica-v5.js _site/post-ica-v5.js
           cp simulator/signal.js _site/signal.js
+          cp laboratories/*.pdf _site/laboratories/
           touch _site/.nojekyll
 
       - name: Upload Pages artifact
