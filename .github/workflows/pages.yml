@@ -30,22 +30,11 @@ jobs:
           set -euo pipefail
           rm -rf _site
           mkdir -p _site
-          cp simulator/main.html _site/index.html
-          cp simulator/light-theme.css _site/light-theme.css
+          cp simulator/index.html _site/index.html
+          cp simulator/app.css _site/app.css
+          cp simulator/app.js _site/app.js
+          cp simulator/signal.js _site/signal.js
           touch _site/.nojekyll
-          python - <<'PY'
-          from pathlib import Path
-
-          page = Path('_site/index.html')
-          html = page.read_text(encoding='utf-8')
-          marker = '</head>'
-          injection = '  <link rel="stylesheet" href="./light-theme.css">\n'
-          if injection.strip() not in html:
-              if marker not in html:
-                  raise SystemExit('Missing </head> in simulator/main.html')
-              html = html.replace(marker, injection + marker, 1)
-          page.write_text(html, encoding='utf-8')
-          PY
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
