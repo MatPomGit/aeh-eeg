@@ -43,6 +43,7 @@ jobs:
           node --input-type=module --check < simulator/pedagogy-fixes.js
           node --input-type=module --check < simulator/source-model-v2.js
           node --input-type=module --check < simulator/runtime-fixes-v2.js
+          node --input-type=module --check < simulator/layout-fixes-v3.js
           node --check simulator/smoke-check.mjs
 
       - name: Run static smoke checks
@@ -70,6 +71,7 @@ jobs:
           cp simulator/runtime-fixes-v2.css _site/runtime-fixes-v2.css
           cp simulator/theme-dark.css _site/theme-dark.css
           cp simulator/compact-layout-fixes.css _site/compact-layout-fixes.css
+          cp simulator/layout-fixes-v3.css _site/layout-fixes-v3.css
           cp simulator/app.js _site/app.js
           cp simulator/enhancements.js _site/enhancements.js
           cp simulator/enhancements2.js _site/enhancements2.js
@@ -87,6 +89,7 @@ jobs:
           cp simulator/pedagogy-fixes.js _site/pedagogy-fixes.js
           cp simulator/source-model-v2.js _site/source-model-v2.js
           cp simulator/runtime-fixes-v2.js _site/runtime-fixes-v2.js
+          cp simulator/layout-fixes-v3.js _site/layout-fixes-v3.js
           cp simulator/signal.js _site/signal.js
           touch _site/.nojekyll
 
