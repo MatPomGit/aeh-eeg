@@ -37,6 +37,7 @@ jobs:
           node --input-type=module --check < simulator/flashcards.js
           node --input-type=module --check < simulator/live-modules.js
           node --input-type=module --check < simulator/ui-controller.js
+          node --input-type=module --check < simulator/pedagogy-fixes.js
           node --check simulator/smoke-check.mjs
 
       - name: Run static smoke checks
@@ -71,6 +72,7 @@ jobs:
           cp simulator/flashcards.js _site/flashcards.js
           cp simulator/live-modules.js _site/live-modules.js
           cp simulator/ui-controller.js _site/ui-controller.js
+          cp simulator/pedagogy-fixes.js _site/pedagogy-fixes.js
           cp simulator/signal.js _site/signal.js
           touch _site/.nojekyll
 
