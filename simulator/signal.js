@@ -1,7 +1,7 @@
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const gauss=(x,m,s)=>Math.exp(-((x-m)**2)/(2*s*s));
 export const mean=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0;
-export const sd=a=>{const m=mean(a);return Math.sqrt(mean(a.map(v=>(v-m)**2)))};
+export const sd=a=>{const m=mean(a);return Math.sqrt(mean(a.map(v=>(v-m)**2)))}
 export const rand=(a,b)=>a+Math.random()*(b-a);
 export function seeded(seed=1){let s=seed>>>0;return()=>((s=Math.imul(1664525,s)+1013904223>>>0)/4294967296)}
 
@@ -31,7 +31,8 @@ export class EEGEngine{
   v+=(b.alpha/100)*23*alphaEnv*Math.sin(2*Math.PI*this.alphaPeak*t+p[2]);
   v+=(b.beta/100)*15*(1+.35*front)*Math.sin(2*Math.PI*19*t+p[3]);
   v+=(b.gamma/100)*7*(1+.35*temp)*Math.sin(2*Math.PI*38*t+p[4]);
-  v+=this.lineNoise*Math.sin(2*Math.PI*50*t)+this.pinkish(t,e.id)*this.noise;
+  const lineGain=.58+.52*((e.id.charCodeAt(0)+e.id.length)%7)/6,linePhase=.16*p[4];
+  v+=this.lineNoise*lineGain*Math.sin(2*Math.PI*50*t+linePhase)+this.pinkish(t,e.id)*this.noise;
   const now=performance.now()/1000;
   for(const a of this.artifacts){
    const d=now-a.t0;if(d<0||d>3)continue;
