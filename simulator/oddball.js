@@ -40,7 +40,7 @@ function appendRow(tbody,row){tbody.insertAdjacentHTML('beforeend',`<tr class="o
 
 async function runExperiment(m){
  const run=$('#runexp',m);if(!run||run.disabled)return;
- const token=++odd.runToken;run.disabled=true;
+ const token=++odd.runToken;run.disabled=true;odd.running=true;
  const tbody=$('#events',m),stim=$('#stim',m),beh=$('#beh',m);tbody.innerHTML='';odd.events=[];odd.markers=[];beh.textContent='Eksperyment w toku…';setActive(true);
  const n=+$('#ntrials',m).value,p=+$('#ptarget',m).value/100,isi=+$('#isi',m).value,jit=+$('#jitter',m).value;let targets=0,correct=0,falseAlarms=0,rts=[];const started=performance.now();
  for(let i=0;i<n;i++){
@@ -55,7 +55,7 @@ async function runExperiment(m){
   await wait(Math.max(120,isi+rand(-jit,jit)-shown));
  }
  if(token===odd.runToken){beh.innerHTML=`Bodźce docelowe: <b>${targets}</b>; trafienia: <b>${correct}</b>; fałszywe alarmy: <b>${falseAlarms}</b>; poprawność dla bodźców docelowych: <b>${Math.round(100*correct/Math.max(1,targets))}%</b>; średni czas reakcji: <b>${rts.length?Math.round(rts.reduce((a,b)=>a+b,0)/rts.length):'—'} ms</b>.`;stim.textContent='✓'}
- run.disabled=false;
+ odd.running=false;run.disabled=false;
 }
 
 function enhance(){
@@ -69,6 +69,6 @@ function enhance(){
 }
 
 window.addEventListener('load',()=>setTimeout(enhance,360),{once:true});
-window.addEventListener('eeg:module',e=>{if(e.detail==='m3')setActive(true);else{setActive(false);if(odd.running){odd.runToken++;odd.running=false}}});
+window.addEventListener('eeg:module',e=>{if(e.detail==='m3')setActive(true);else{setActive(false);if(odd.running){odd.runToken++;odd.running=false;const run=$('#m3 #runexp');if(run)run.disabled=false}}});
 window.addEventListener('eeg:theme',()=>requestAnimationFrame(draw));
 window.addEventListener('beforeunload',()=>setActive(false));
