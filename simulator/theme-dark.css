@@ -26,7 +26,7 @@
 :root[data-theme="dark"] .qeeg-step.active{background:#1c4f47;color:#f5ffff;border-color:var(--accent);box-shadow:inset 0 0 0 1px rgba(99,211,191,.18)}
 :root[data-theme="dark"] .qeeg-step.active .num,:root[data-theme="dark"] .qeeg-step.active strong{color:#f5ffff}
 :root[data-theme="dark"] .ztrack{background:linear-gradient(90deg,#56302d,#25383d 35%,#25383d 65%,#2c4663)}
-:root[data-theme="dark"] .ztrack i{background:#000}
+:root[data-theme="dark"] .ztrack i{background:#fff}
 :root[data-theme="dark"] .heatmap-top-row .panel{background:var(--panel)}
 .theme-toggle{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:1px solid var(--line2);background:var(--well);color:var(--text);border-radius:999px;padding:.34rem .64rem;cursor:pointer;font:600 .72rem var(--mono)}
 .theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
