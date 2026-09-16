@@ -25,22 +25,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --input-type=module --check < simulator/signal.js
-          node --input-type=module --check < simulator/app.js
-          node --input-type=module --check < simulator/enhancements.js
-          node --input-type=module --check < simulator/enhancements2.js
-          node --input-type=module --check < simulator/legacy-cleanup.js
-          node --input-type=module --check < simulator/clinical-learning.js
-          node --input-type=module --check < simulator/clinical-compare-v2.js
-          node --input-type=module --check < simulator/qeeg-workflow.js
-          node --input-type=module --check < simulator/qeeg-heatmap-v2.js
-          node --input-type=module --check < simulator/flashcards.js
-          node --input-type=module --check < simulator/live-modules.js
-          node --input-type=module --check < simulator/eye-tracking-v2.js
-          node --input-type=module --check < simulator/ui-controller.js
-          node --input-type=module --check < simulator/pedagogy-fixes.js
-          node --input-type=module --check < simulator/source-model-v2.js
-          node --input-type=module --check < simulator/interface.js
+          for file in \
+            signal.js app.js enhancements.js enhancements2.js legacy-cleanup.js \
+            clinical.js qeeg-workflow.js qeeg-heatmap-v2.js quiz.js live-modules.js \
+            eye-tracking-v2.js ui-controller.js teaching-content.js source-model-v2.js interface.js; do
+            node --input-type=module --check < "simulator/$file"
+          done
           node --check simulator/smoke-check.mjs
 
       - name: Run static smoke checks
@@ -60,31 +50,8 @@ jobs:
           mkdir -p _site/laboratories
           cp simulator/index.html _site/index.html
           cp simulator/laboratories.html _site/laboratories.html
-          cp simulator/app.css _site/app.css
-          cp simulator/enhancements.css _site/enhancements.css
-          cp simulator/enhancements2.css _site/enhancements2.css
-          cp simulator/enhancements3.css _site/enhancements3.css
-          cp simulator/eye-tracking-v2.css _site/eye-tracking-v2.css
-          cp simulator/source-model-v2.css _site/source-model-v2.css
-          cp simulator/theme-dark.css _site/theme-dark.css
-          cp simulator/laboratories.css _site/laboratories.css
-          cp simulator/interface.css _site/interface.css
-          cp simulator/app.js _site/app.js
-          cp simulator/enhancements.js _site/enhancements.js
-          cp simulator/enhancements2.js _site/enhancements2.js
-          cp simulator/legacy-cleanup.js _site/legacy-cleanup.js
-          cp simulator/clinical-learning.js _site/clinical-learning.js
-          cp simulator/clinical-compare-v2.js _site/clinical-compare-v2.js
-          cp simulator/qeeg-workflow.js _site/qeeg-workflow.js
-          cp simulator/qeeg-heatmap-v2.js _site/qeeg-heatmap-v2.js
-          cp simulator/flashcards.js _site/flashcards.js
-          cp simulator/live-modules.js _site/live-modules.js
-          cp simulator/eye-tracking-v2.js _site/eye-tracking-v2.js
-          cp simulator/ui-controller.js _site/ui-controller.js
-          cp simulator/pedagogy-fixes.js _site/pedagogy-fixes.js
-          cp simulator/source-model-v2.js _site/source-model-v2.js
-          cp simulator/interface.js _site/interface.js
-          cp simulator/signal.js _site/signal.js
+          cp simulator/{app.css,modules.css,eye-tracking-v2.css,source-model-v2.css,theme-dark.css,laboratories.css,interface.css} _site/
+          cp simulator/{app.js,enhancements.js,enhancements2.js,legacy-cleanup.js,clinical.js,qeeg-workflow.js,qeeg-heatmap-v2.js,quiz.js,live-modules.js,eye-tracking-v2.js,ui-controller.js,teaching-content.js,source-model-v2.js,interface.js,signal.js} _site/
           cp laboratories/*.pdf _site/laboratories/
           touch _site/.nojekyll
 
