@@ -30,13 +30,19 @@ jobs:
           node --input-type=module --check < simulator/enhancements.js
           node --input-type=module --check < simulator/enhancements2.js
           node --input-type=module --check < simulator/enhancements3.js
-          node --input-type=module --check < simulator/physiology-eye.js
           node --input-type=module --check < simulator/clinical-learning.js
           node --input-type=module --check < simulator/qeeg-workflow.js
           node --input-type=module --check < simulator/qeeg-heatmap-v2.js
           node --input-type=module --check < simulator/flashcards.js
           node --input-type=module --check < simulator/live-modules.js
           node --input-type=module --check < simulator/ui-controller.js
+          node --check simulator/smoke-check.mjs
+
+      - name: Run static smoke checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node simulator/smoke-check.mjs
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -57,7 +63,6 @@ jobs:
           cp simulator/enhancements.js _site/enhancements.js
           cp simulator/enhancements2.js _site/enhancements2.js
           cp simulator/enhancements3.js _site/enhancements3.js
-          cp simulator/physiology-eye.js _site/physiology-eye.js
           cp simulator/clinical-learning.js _site/clinical-learning.js
           cp simulator/qeeg-workflow.js _site/qeeg-workflow.js
           cp simulator/qeeg-heatmap-v2.js _site/qeeg-heatmap-v2.js
