@@ -18,7 +18,7 @@ const retired=[
 ];
 for(const f of retired){if(refs.includes(f))fail(`retired asset loaded again: ${f}`);if(fs.existsSync(path.join(root,f)))fail(`retired asset still exists: ${f}`)}
 
-const required=['experiment-processing.js','signal-analysis.js','signal-live.js','montage.js','ica.js','storage.js','clinical.js','qeeg-workflow.js','qeeg-heatmap.js','quiz.js','live-modules.js','eye-tracking.js','teaching-content.js','source-model.js','theme.js','interface.js','experiment-enhancements.js','erp-averaging.js'];
+const required=['experiment-processing.js','signal-analysis.js','signal-live.js','montage.js','ica.js','storage.js','clinical.js','qeeg-workflow.js','qeeg-heatmap.js','quiz.js','live-modules.js','eye-tracking.js','teaching-content.js','source-model.js','theme.js','interface.js','stroop.js','oddball.js','erp-averaging.js'];
 for(const f of required)if(!scripts.includes(f))fail(`required module is not loaded: ${f}`);
 
 const declarations=[['experiment-processing.js',['m3','m5']],['signal-analysis.js',['m1x','mfft','mpostx']],['montage.js',['m2x']],['ica.js',['mica']],['storage.js',['mformats','mbids']],['clinical.js',['mlobes','mclinical']],['qeeg-workflow.js',['mqeeg']],['qeeg-heatmap.js',['mheat']],['quiz.js',['mquiz']],['live-modules.js',['msimlive2','mphys2','meye2']],['source-model.js',['m7']]];
@@ -35,6 +35,8 @@ for(const id of declaredIds)if(!navIds.includes(id))fail(`declared module #${id}
 if(/const\s+NAV\s*=/.test(read('signal-live.js')))fail('signal-live.js must not own navigation');
 if(/nav\.innerHTML/.test(read('signal-live.js')))fail('signal-live.js modifies navigation');
 if(!read('signal-live.js').includes("active==='m1x'"))fail('live EEG renderer does not handle m1x');
+if(!read('oddball.js').includes("appendRow(tbody"))fail('Oddball event markers are not rendered incrementally');
+if(!read('oddball.js').includes("e.target?'S2':'S1'"))fail('Oddball EEG plot lacks S1/S2 event markers');
 
 const storage=read('storage.js');
 if(!storage.includes("id='mformats'")||!storage.includes("id='mbids'"))fail('storage module is incomplete');
