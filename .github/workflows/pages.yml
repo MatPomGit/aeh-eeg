@@ -46,6 +46,7 @@ jobs:
           node --input-type=module --check < simulator/layout-fixes-v3.js
           node --input-type=module --check < simulator/structure-v4.js
           node --input-type=module --check < simulator/post-ica-v5.js
+          node --input-type=module --check < simulator/interface-v6.js
           node --check simulator/smoke-check.mjs
 
       - name: Run static smoke checks
@@ -78,6 +79,7 @@ jobs:
           cp simulator/structure-v4.css _site/structure-v4.css
           cp simulator/post-ica-v5.css _site/post-ica-v5.css
           cp simulator/laboratories.css _site/laboratories.css
+          cp simulator/interface-v6.css _site/interface-v6.css
           cp simulator/app.js _site/app.js
           cp simulator/enhancements.js _site/enhancements.js
           cp simulator/enhancements2.js _site/enhancements2.js
@@ -98,6 +100,7 @@ jobs:
           cp simulator/layout-fixes-v3.js _site/layout-fixes-v3.js
           cp simulator/structure-v4.js _site/structure-v4.js
           cp simulator/post-ica-v5.js _site/post-ica-v5.js
+          cp simulator/interface-v6.js _site/interface-v6.js
           cp simulator/signal.js _site/signal.js
           cp laboratories/*.pdf _site/laboratories/
           touch _site/.nojekyll
