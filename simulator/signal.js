@@ -50,7 +50,7 @@ export class EEGEngine{
   return v;
  }
  pinkish(t,id){return Math.sin(2*Math.PI*.7*t+id.length)+.65*Math.sin(2*Math.PI*3.1*t+id.charCodeAt(0))+.35*Math.sin(2*Math.PI*17*t)+rand(-.55,.55)}
- generate(seconds=this.seconds){const n=Math.round(seconds*this.fs),out={};for(const e of ELECTRODES){const a=new Array(n);for(let i=0;i<n;i++)a[i]=this.sample(e,i/this.fs);out[e.id]=a}return this.rereference(out)}
+ generate(seconds=this.seconds,startTime=0){const n=Math.round(seconds*this.fs),out={};for(const e of ELECTRODES){const a=new Array(n);for(let i=0;i<n;i++)a[i]=this.sample(e,startTime+i/this.fs);out[e.id]=a}return this.rereference(out)}
  rereference(data){const ids=Object.keys(data),n=data[ids[0]].length,res={};if(this.reference==='Cz'){const ref=data.Cz;for(const id of ids)res[id]=data[id].map((v,i)=>v-ref[i]);return res}if(this.reference==='mastoids'){const pseudo=data.T7.map((v,i)=>(v+data.T8[i])/2);for(const id of ids)res[id]=data[id].map((v,i)=>v-pseudo[i]);return res}for(const id of ids)res[id]=new Array(n);for(let i=0;i<n;i++){const m=mean(ids.map(id=>data[id][i]));for(const id of ids)res[id][i]=data[id][i]-m}return res}
  qc(impedances={}){const vals=ELECTRODES.map(e=>impedances[e.id]??12);const bad=ELECTRODES.filter(e=>(impedances[e.id]??12)>20||this.badChannels.has(e.id)).map(e=>e.id);return{median:[...vals].sort((a,b)=>a-b)[Math.floor(vals.length/2)],bad,line:this.lineNoise,clipping:bad.length>2,ready:bad.length===0&&mean(vals)<15&&this.lineNoise<8}}
 }
