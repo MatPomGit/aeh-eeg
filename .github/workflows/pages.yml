@@ -28,6 +28,7 @@ jobs:
           node --input-type=module --check < simulator/signal.js
           node --input-type=module --check < simulator/app.js
           node --input-type=module --check < simulator/enhancements.js
+          node --input-type=module --check < simulator/enhancements2.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -41,8 +42,10 @@ jobs:
           cp simulator/index.html _site/index.html
           cp simulator/app.css _site/app.css
           cp simulator/enhancements.css _site/enhancements.css
+          cp simulator/enhancements2.css _site/enhancements2.css
           cp simulator/app.js _site/app.js
           cp simulator/enhancements.js _site/enhancements.js
+          cp simulator/enhancements2.js _site/enhancements2.js
           cp simulator/signal.js _site/signal.js
           touch _site/.nojekyll
 
