@@ -21,7 +21,7 @@ export class EEGEngine{
  }
  setFs(v){this.fs=Number(v)}
  setBand(name,value){if(name in this.bands)this.bands[name]=clamp(Number(value),0,100)}
- artifact(type){this.artifacts.push({type,t0:performance.now()/1000})}
+ artifact(type){const now=performance.now()/1000;this.artifacts=this.artifacts.filter(a=>now-a.t0<3);this.artifacts.push({type,t0:now})}
  sample(e,t){
   const p=this.phase.get(e.id),occ=e.region==='occipital'?1:0,par=e.region==='parietal'?1:0,front=e.region==='frontal'?1:0,temp=e.region==='temporal'?1:0;
   const b=this.bands,alphaEnv=(.65+.35*Math.sin(2*Math.PI*.18*t+p[0]))*(this.eyesClosed?(1+1.7*occ+.6*par):(.58+.18*occ));
@@ -34,18 +34,24 @@ export class EEGEngine{
   const lineGain=.58+.52*((e.id.charCodeAt(0)+e.id.length)%7)/6,linePhase=.16*p[4];
   v+=this.lineNoise*lineGain*Math.sin(2*Math.PI*50*t+linePhase)+this.pinkish(t,e.id)*this.noise;
   const now=performance.now()/1000;
+  const xn=(e.x-100)/80,yn=(e.y-103)/70;
+  const moveGain=.78+.34*xn-.22*yn+.12*Math.sin(p[0]);
+  const cableGain=.35+1.15*Math.exp(-((e.x-42)**2+(e.y-72)**2)/(2*58**2));
+  const ecgGain=.45+.55*(1-front)+.28*temp+.12*xn;
+  const sweatGain=.42+.72*front+.20*temp+.12*(1-yn);
+  const burstGain=.45+.72*((e.id.charCodeAt(0)+2*e.id.length)%9)/8;
   for(const a of this.artifacts){
    const d=now-a.t0;if(d<0||d>3)continue;
    if(a.type==='blink'&&front)v+=105*gauss(d,.24,.09);
    if(a.type==='saccade'&&front)v+=(e.id.endsWith('1')||e.id==='F7'?-1:1)*65*gauss(d,.28,.16);
    if(a.type==='emg')v+=(front||temp?1:.25)*rand(-46,46)*Math.exp(-d/1.1);
    if(a.type==='jaw')v+=(temp?1:.35)*rand(-58,58)*Math.exp(-d/.8)*Math.sin(2*Math.PI*rand(35,70)*t);
-   if(a.type==='move')v+=70*Math.exp(-d/.7)*(1+.2*Math.sin(2*Math.PI*3*t));
-   if(a.type==='cable')v+=32*Math.sin(2*Math.PI*7*t)*Math.exp(-d/1.5);
+   if(a.type==='move')v+=78*moveGain*Math.exp(-d/.85)*(1+.28*Math.sin(2*Math.PI*2.4*t+p[1]));
+   if(a.type==='cable')v+=46*cableGain*Math.sin(2*Math.PI*7.2*t+.35*p[2])*Math.exp(-d/1.25);
    if(a.type==='pop')v+=(d<.08?120:35*Math.exp(-d/.6))*(e.id==='Fp1'||e.id==='F7'?1:.15);
-   if(a.type==='ecg')v+=(front?4:8)*(gauss(d%0.85,.08,.025)-.35*gauss(d%0.85,.18,.04));
-   if(a.type==='sweat')v+=24*Math.sin(2*Math.PI*.18*t)*Math.exp(-d/2.8);
-   if(a.type==='lineburst')v+=24*Math.sin(2*Math.PI*50*t)*Math.exp(-d/1.4);
+   if(a.type==='ecg')v+=18*ecgGain*(gauss(d%0.82,.075,.022)-.42*gauss(d%0.82,.17,.045));
+   if(a.type==='sweat')v+=38*sweatGain*Math.sin(2*Math.PI*.18*t+.24*p[0])*Math.exp(-d/2.7);
+   if(a.type==='lineburst')v+=38*burstGain*Math.sin(2*Math.PI*50*t+.22*p[4])*Math.exp(-d/1.35);
   }
   if(this.badChannels.has(e.id))v+=rand(-65,65);
   return v;
