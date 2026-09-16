@@ -36,6 +36,7 @@ jobs:
           node --input-type=module --check < simulator/qeeg-heatmap-v2.js
           node --input-type=module --check < simulator/flashcards.js
           node --input-type=module --check < simulator/live-modules.js
+          node --input-type=module --check < simulator/eye-tracking-v2.js
           node --input-type=module --check < simulator/ui-controller.js
           node --input-type=module --check < simulator/pedagogy-fixes.js
           node --check simulator/smoke-check.mjs
@@ -60,6 +61,7 @@ jobs:
           cp simulator/enhancements.css _site/enhancements.css
           cp simulator/enhancements2.css _site/enhancements2.css
           cp simulator/enhancements3.css _site/enhancements3.css
+          cp simulator/eye-tracking-v2.css _site/eye-tracking-v2.css
           cp simulator/theme-dark.css _site/theme-dark.css
           cp simulator/app.js _site/app.js
           cp simulator/enhancements.js _site/enhancements.js
@@ -71,6 +73,7 @@ jobs:
           cp simulator/qeeg-heatmap-v2.js _site/qeeg-heatmap-v2.js
           cp simulator/flashcards.js _site/flashcards.js
           cp simulator/live-modules.js _site/live-modules.js
+          cp simulator/eye-tracking-v2.js _site/eye-tracking-v2.js
           cp simulator/ui-controller.js _site/ui-controller.js
           cp simulator/pedagogy-fixes.js _site/pedagogy-fixes.js
           cp simulator/signal.js _site/signal.js
