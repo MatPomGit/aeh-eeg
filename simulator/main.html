@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EEG-Lab · Symulator laboratoryjny</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+============================================================ */
+:root{
+  --bg:       #070d0c;
+  --bg-panel: #0e1917;
+  --bg-panel2:#13221f;
+  --bg-well:  #0a1413;
+  --border:   #1f3a35;
+  --border2:  #2c4d46;
+  --text:     #dff3ed;
+  --text-dim: #7fa89a;
+  --text-faint:#4d6b62;
+  --cyan:     #5eead4;
+  --cyan-dim: #2f6b60;
+  --amber:    #f5c04a;
+  --red:      #f2685c;
+  --violet:   #a78bfa;
+  --green:    #7ee08a;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --r: 8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(94,234,212,0.05), transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(167,139,250,0.04), transparent 40%);
+}
+a{color:var(--cyan)}
+button{font-family:var(--sans)}
+::selection{background:var(--cyan-dim);color:#fff}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:var(--bg-well)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px}
+
+/* ============================================================
+   APP SHELL
+============================================================ */
+.app-shell{
+  display:grid;
+  grid-template-columns:222px 1fr;
+  grid-template-rows:auto 1fr;
+  grid-template-areas:
+    "top top"
+    "nav main";
+  min-height:100vh;
+}
+.topbar{
+  grid-area:top;
+  display:flex; align-items:center; gap:14px;
+  padding:0.75rem 1.3rem;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,#0c1614,#0a1211);
+  position:sticky; top:0; z-index:50;
+}
+.topbar .blip{
+  width:11px;height:11px;border-radius:50%;
+  background:var(--cyan);
+  box-shadow:0 0 0 3px rgba(94,234,212,.14);
+  animation:blip 2.4s ease-in-out infinite;
+  flex-shrink:0;
+}
+@keyframes blip{0%,100%{opacity:1}50%{opacity:.35}}
+.topbar h1{
+  font-size:1.02rem; font-weight:600; letter-spacing:.01em;
+}
+.topbar .sub{
+  font-family:var(--mono); font-size:.72rem; color:var(--text-dim);
+  padding-left:14px; border-left:1px solid var(--border2);
+}
+.topbar .spacer{flex:1}
+.topbar .sessioninfo{
+  font-family:var(--mono); font-size:.72rem; color:var(--text-dim);
+  display:flex; gap:16px; align-items:center;
+}
+.topbar .sessioninfo b{color:var(--cyan); font-weight:600}
+.btn-reset{
+  font-family:var(--mono); font-size:.72rem;
+  background:transparent; border:1px solid var(--border2); color:var(--text-dim);
+  padding:.4rem .7rem; border-radius:6px; cursor:pointer;
+  transition:all .15s ease;
+}
+.btn-reset:hover{border-color:var(--red); color:var(--red)}
+
+.navrail{
+  grid-area:nav;
+  background:var(--bg-panel);
+  border-right:1px solid var(--border);
+  padding:1rem .7rem;
+  display:flex; flex-direction:column; gap:.3rem;
+}
+.navrail .navlabel{
+  font-family:var(--mono); font-size:.65rem; letter-spacing:.08em;
+  color:var(--text-faint); padding:.4rem .6rem .3rem;
+}
+.navitem{
+  display:flex; align-items:center; gap:.65rem;
+  padding:.62rem .65rem; border-radius:7px;
+  background:transparent; border:1px solid transparent;
+  color:var(--text-dim); cursor:pointer; text-align:left;
+  font-size:.86rem; transition:all .13s ease;
+}
+.navitem:hover{background:var(--bg-panel2); color:var(--text)}
+.navitem.active{
+  background:var(--bg-panel2); border-color:var(--border2); color:var(--text);
+}
+.navitem .num{
+  font-family:var(--mono); font-size:.72rem; width:1.5rem; height:1.5rem;
+  border-radius:5px; background:var(--bg-well); color:var(--text-dim);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  border:1px solid var(--border2);
+}
+.navitem.active .num{background:var(--cyan); color:#04231d; border-color:var(--cyan)}
+.navitem .lbl{display:flex; flex-direction:column; gap:1px}
+.navitem .lbl .t{font-weight:500}
+.navitem .lbl .d{font-size:.68rem; color:var(--text-faint)}
+.navitem.active .lbl .d{color:var(--text-dim)}
+
+.workspace{
+  grid-area:main;
+  padding:1.4rem 1.6rem 3rem;
+  max-width:1180px;
+}
+.module{display:none; animation:fadein .25s ease both}
+.module.active{display:block}
+@keyframes fadein{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:translateY(0)}}
+
+.mod-head{margin-bottom:1.2rem}
+.mod-head .eyebrow{
+  font-family:var(--mono); font-size:.72rem; color:var(--cyan); letter-spacing:.03em;
+}
+.mod-head h2{font-size:1.5rem; font-weight:600; margin:.2rem 0 .4rem; letter-spacing:-.01em}
+.mod-head p{color:var(--text-dim); font-size:.9rem; max-width:640px; line-height:1.55}
+
+.grid2{display:grid; grid-template-columns:320px 1fr; gap:1.1rem; align-items:start}
+.grid-3col{display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.1rem; align-items:start}
+@media(max-width:920px){.grid2{grid-template-columns:1fr} .grid-3col{grid-template-columns:1fr}}
+
+.panel{
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:1.1rem;
+}
+.panel h3{font-size:.82rem; font-weight:600; margin-bottom:.85rem; display:flex; align-items:center; gap:.5rem}
+.panel h3 .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan)}
+.panel + .panel{margin-top:1.1rem}
+
+.field{margin-bottom:.95rem}
+.field:last-child{margin-bottom:0}
+.field label{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-size:.78rem; color:var(--text-dim); margin-bottom:.35rem;
+}
+.field label .val{font-family:var(--mono); color:var(--cyan); font-size:.78rem}
+input[type=range]{
+  width:100%; height:4px; border-radius:2px; background:var(--border2);
+  appearance:none; -webkit-appearance:none; outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  appearance:none; -webkit-appearance:none; width:14px;height:14px;border-radius:50%;
+  background:var(--cyan); cursor:pointer; border:2px solid #04231d;
+}
+input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%; background:var(--cyan); cursor:pointer; border:2px solid #04231d;
+}
+select, .textbox{
+  width:100%; background:var(--bg-well); border:1px solid var(--border2); color:var(--text);
+  padding:.5rem .6rem; border-radius:6px; font-family:var(--sans); font-size:.83rem;
+}
+textarea.textbox{resize:vertical; min-height:70px; font-family:var(--sans); line-height:1.5}
+
+.btnrow{display:flex; gap:.5rem; flex-wrap:wrap}
+.btn{
+  font-size:.8rem; padding:.55rem .9rem; border-radius:6px; cursor:pointer;
+  border:1px solid var(--border2); background:var(--bg-well); color:var(--text);
+  transition:all .13s ease; font-weight:500;
+}
+.btn:hover{border-color:var(--cyan); color:var(--cyan)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.35; cursor:not-allowed}
+.btn:disabled:hover{border-color:var(--border2); color:var(--text)}
+.btn-primary{background:var(--cyan); border-color:var(--cyan); color:#04231d; font-weight:600}
+.btn-primary:hover{background:#7ff2df; color:#04231d}
+.btn-amber{border-color:var(--amber); color:var(--amber)}
+.btn-amber:hover{background:rgba(245,192,74,.1)}
+.btn-red{border-color:var(--red); color:var(--red)}
+.btn-red:hover{background:rgba(242,104,92,.1)}
+.btn-toggle.is-on{background:var(--cyan); color:#04231d; border-color:var(--cyan)}
+
+.readout{
+  font-family:var(--mono); font-size:.78rem; color:var(--text-dim);
+  background:var(--bg-well); border:1px solid var(--border); border-radius:6px;
+  padding:.6rem .75rem; line-height:1.6;
+}
+.readout b{color:var(--cyan); font-weight:600}
+.readout .warn{color:var(--amber)}
+.readout .bad{color:var(--red)}
+
+canvas{display:block; width:100%; height:auto; background:var(--bg-well); border-radius:6px; border:1px solid var(--border)}
+.canvaswrap{position:relative}
+.chanlabel{
+  position:absolute; left:8px; font-family:var(--mono); font-size:.68rem; color:var(--text-faint);
+  pointer-events:none;
+}
+
+.legend{display:flex; gap:1rem; flex-wrap:wrap; font-size:.72rem; color:var(--text-dim); margin-top:.6rem}
+.legend span{display:inline-flex; align-items:center; gap:.4rem}
+.legend i{width:9px;height:9px;border-radius:50%; display:inline-block}
+
+table.datatable{width:100%; border-collapse:collapse; font-size:.78rem}
+table.datatable th{
+  text-align:left; font-family:var(--mono); font-size:.66rem; color:var(--text-faint);
+  padding:.4rem .5rem; border-bottom:1px solid var(--border2); font-weight:500;
+}
+table.datatable td{padding:.4rem .5rem; border-bottom:1px solid var(--border); font-family:var(--mono)}
+table.datatable tbody tr:hover{background:var(--bg-panel2)}
+
+.eventlog{
+  height:190px; overflow-y:auto; font-family:var(--mono); font-size:.72rem;
+  background:var(--bg-well); border:1px solid var(--border); border-radius:6px; padding:.5rem .6rem;
+}
+.eventlog .ev{padding:.15rem 0; color:var(--text-dim); border-bottom:1px dashed var(--border)}
+.eventlog .ev.target{color:var(--amber)}
+.eventlog .ev:last-child{border-bottom:none}
+
+.stim-stage{
+  height:150px; display:flex; align-items:center; justify-content:center;
+  background:var(--bg-well); border:1px solid var(--border); border-radius:6px;
+  position:relative; overflow:hidden;
+}
+.stim-shape{
+  width:64px;height:64px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:.68rem; font-weight:600;
+  transition:all .08s ease; opacity:0;
+}
+.stim-shape.show{opacity:1}
+.stim-shape.std{background:rgba(94,234,212,.14); border:2px solid var(--cyan); color:var(--cyan); border-radius:50%}
+.stim-shape.tgt{background:rgba(245,192,74,.16); border:2px solid var(--amber); color:var(--amber); border-radius:10px}
+
+.svghead{width:100%; max-width:280px; margin:0 auto; display:block}
+.svghead .scalp{fill:var(--bg-well); stroke:var(--border2); stroke-width:1.5}
+.svghead .feature{fill:none; stroke:var(--border2); stroke-width:1.5}
+.elec{cursor:pointer}
+.elec circle{stroke:#03110f; stroke-width:1}
+.elec text{font-family:var(--mono); font-size:6.5px; fill:var(--text-dim); pointer-events:none}
+.elec.preparing circle{animation:pulseamber 1s ease-in-out infinite}
+@keyframes pulseamber{0%,100%{opacity:1}50%{opacity:.45}}
+
+.badge{
+  display:inline-flex; align-items:center; gap:.35rem;
+  font-family:var(--mono); font-size:.68rem; padding:.15rem .5rem; border-radius:20px;
+  border:1px solid var(--border2); color:var(--text-dim);
+}
+.badge i{width:6px;height:6px;border-radius:50%}
+
+.stimcards{display:flex; gap:.5rem; flex-wrap:wrap}
+.stimcard{
+  flex:1 1 90px; padding:.7rem .5rem; text-align:center; border-radius:8px; cursor:pointer;
+  border:1px solid var(--border2); background:var(--bg-well); font-size:.72rem; color:var(--text-dim);
+  transition:all .13s ease;
+}
+.stimcard:hover{border-color:var(--cyan); color:var(--text)}
+.stimcard.selected{border-color:var(--cyan); background:rgba(94,234,212,.08); color:var(--cyan)}
+.stimcard .sw{width:100%; height:34px; border-radius:5px; margin-bottom:.4rem}
+
+.footer-note{
+  margin-top:2rem; padding-top:1rem; border-top:1px solid var(--border);
+  font-size:.74rem; color:var(--text-faint); line-height:1.6; max-width:680px;
+}
+
+.icacard{
+  border:1px solid var(--border2); border-radius:8px; padding:.7rem; background:var(--bg-well);
+}
+.icacard.marked{border-color:var(--red)}
+.icacard .icahead{display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem}
+.icacard .icaname{font-size:.76rem; font-weight:500}
+.icacard .icatag{font-family:var(--mono); font-size:.62rem; color:var(--text-faint)}
+.icacard canvas{height:44px; border:none; background:transparent}
+.checkline{display:flex; align-items:center; gap:.45rem; font-size:.72rem; color:var(--text-dim); margin-top:.4rem}
+.checkline input{accent-color:var(--red)}
+
+@media(max-width:800px){
+  .app-shell{grid-template-columns:1fr; grid-template-areas:"top" "nav" "main"}
+  .navrail{
+    flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--border);
+    padding:.6rem .7rem;
+  }
+  .navrail .navlabel{display:none}
+  .navitem{flex-shrink:0}
+  .navitem .lbl .d{display:none}
+  .workspace{padding:1.1rem}
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <header class="topbar">
+    <span class="blip"></span>
+    <h1>EEG-Lab</h1>
+    <span class="sub">Symulator laboratoryjny · Neurofizjologia i pomiar EEG</span>
+    <span class="spacer"></span>
+    <span class="sessioninfo">
+      <span>MONTAŻ: <b id="hdr-montage">0/19</b></span>
+      <span>ZESTAW DANYCH: <b id="hdr-dataset">brak</b></span>
+    </span>
+    <button class="btn-reset" id="btn-global-reset">Zresetuj sesję</button>
+  </header>
+
+  <nav class="navrail" id="navrail">
+    <div class="navlabel">MODUŁY ĆWICZENIOWE</div>
+    <!-- nav items injected by JS -->
+  </nav>
+
+  <main class="workspace" id="workspace">
+    <!-- modules injected by JS -->
+  </main>
+
+</div>
+
+<script>
+/* ============================================================================
+   EEG-LAB SIMULATOR
+   Wszystkie dane w tej aplikacji są w pełni syntetyczne — generowane
+   proceduralnie na potrzeby dydaktyczne i nie pochodzą z rzeczywistych
+   pomiarów fizjologicznych.
+============================================================================ */
+(function(){
+"use strict";
+
+/* ---------------------------------------------------------------------
+   0. Wspólne narzędzia
+--------------------------------------------------------------------- */
+const rand  = (a,b)=> a + Math.random()*(b-a);
+const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
+const lerp  = (a,b,t)=> a+(b-a)*t;
+function gauss(x, mu, sigma){ return Math.exp(-((x-mu)*(x-mu))/(2*sigma*sigma)); }
+function lerpColor(hexA, hexB, t){
+  const pa=parseInt(hexA.slice(1),16), pb=parseInt(hexB.slice(1),16);
+  const ar=(pa>>16)&255, ag=(pa>>8)&255, ab=pa&255;
+  const br=(pb>>16)&255, bg=(pb>>8)&255, bb=pb&255;
+  const r=Math.round(lerp(ar,br,t)), g=Math.round(lerp(ag,bg,t)), b=Math.round(lerp(ab,bb,t));
+  return `rgb(${r},${g},${b})`;
+}
+function fmt(n,d){ return Number(n).toFixed(d===undefined?1:d); }
+
+function setupCanvas(canvas){
+  // keeps a crisp fixed internal resolution; CSS scales responsively
+  const ctx = canvas.getContext('2d');
+  return ctx;
+}
+
+function el(tag, attrs, children){
+  const e = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k==='class') e.className=attrs[k];
+    else if(k==='html') e.innerHTML=attrs[k];
+    else if(k.startsWith('on') && typeof attrs[k]==='function') e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  (children||[]).forEach(c=> e.appendChild(typeof c==='string'? document.createTextNode(c): c));
+  return e;
+}
+
+/* ---------------------------------------------------------------------
+   1. Definicja modułów i nawigacji
+--------------------------------------------------------------------- */
+const MODULES = [
+  {id:'m1', t:'Sygnał i pasma',        d:'Zajęcia 1 · źródła i rytmy'},
+  {id:'m2', t:'Montaż i impedancja',   d:'Zajęcia 2 · czepek, elektrody'},
+  {id:'m3', t:'Paradygmat oddball',    d:'Zajęcia 3 · rejestracja'},
+  {id:'m4', t:'ERP, widmo, źródła',    d:'Zajęcia 4 · analiza'},
+  {id:'m5', t:'Pipeline i ICA',        d:'Zajęcia 5 · czyszczenie danych'},
+  {id:'m6', t:'EMG · EKG · GSR · wzrok', d:'Zajęcia 6 · inne metody'},
+];
+
+const navrail = document.getElementById('navrail');
+MODULES.forEach((m,i)=>{
+  const btn = el('button',{class:'navitem'+(i===0?' active':''), 'data-mod':m.id, onclick:()=>showModule(m.id)},[
+    el('span',{class:'num'},[String(i+1)]),
+    el('span',{class:'lbl'},[ el('span',{class:'t'},[m.t]), el('span',{class:'d'},[m.d]) ])
+  ]);
+  navrail.appendChild(btn);
+});
+
+function showModule(id){
+  document.querySelectorAll('.module').forEach(s=> s.classList.toggle('active', s.id===id));
+  document.querySelectorAll('.navitem').forEach(b=> b.classList.toggle('active', b.getAttribute('data-mod')===id));
+}
+
+const workspace = document.getElementById('workspace');
+
+/* =====================================================================
+   ELEKTRODY 10-20 (współrzędne w układzie SVG viewBox 0 0 200 200)
+===================================================================== */
+const ELECTRODES = [
+  {id:'Fp1', x:70,  y:38},  {id:'Fp2', x:130, y:38},
+  {id:'F7',  x:32,  y:60},  {id:'F3',  x:70,  y:58}, {id:'Fz', x:100, y:56}, {id:'F4', x:130, y:58}, {id:'F8', x:168, y:60},
+  {id:'T3',  x:20,  y:100}, {id:'C3',  x:65,  y:100},{id:'Cz', x:100, y:100},{id:'C4', x:135, y:100},{id:'T4', x:180, y:100},
+  {id:'T5',  x:32,  y:140}, {id:'P3',  x:70,  y:142},{id:'Pz', x:100, y:144},{id:'P4', x:130, y:142},{id:'T6', x:168, y:140},
+  {id:'O1',  x:75,  y:168}, {id:'O2',  x:125, y:168},
+];
+
+function headSvg(){
+  return `<svg class="svghead" viewBox="0 0 200 200">
+    <circle class="scalp" cx="100" cy="100" r="88"/>
+    <path class="feature" d="M 88 14 L 100 2 L 112 14"/>
+    <path class="feature" d="M 12 90 Q 4 100 12 110"/>
+    <path class="feature" d="M 188 90 Q 196 100 188 110"/>
+  </svg>`;
+}
+
+/* Channels used for the LIVE strip-chart in module 1 (subset, topographically spread) */
+const LIVE_CHANNELS = [
+  {id:'Fp1', deltaW:1.0, thetaW:1.0, alphaW:0.5, betaW:1.0, gammaW:0.7, frontal:true},
+  {id:'Fp2', deltaW:1.0, thetaW:1.0, alphaW:0.5, betaW:1.0, gammaW:0.7, frontal:true},
+  {id:'Fz',  deltaW:0.8, thetaW:1.2, alphaW:0.6, betaW:0.8, gammaW:0.5, frontal:true},
+  {id:'Cz',  deltaW:0.6, thetaW:0.7, alphaW:0.8, betaW:1.1, gammaW:0.6, frontal:false},
+  {id:'Pz',  deltaW:0.6, thetaW:0.9, alphaW:1.1, betaW:0.6, gammaW:0.4, frontal:false},
+  {id:'O1',  deltaW:0.5, thetaW:0.6, alphaW:1.8, betaW:0.4, gammaW:0.3, frontal:false},
+  {id:'O2',  deltaW:0.5, thetaW:0.6, alphaW:1.8, betaW:0.4, gammaW:0.3, frontal:false},
+];
+LIVE_CHANNELS.forEach(ch=>{ ch.phase=[rand(0,7),rand(0,7),rand(0,7),rand(0,7),rand(0,7)]; ch.buf=[]; });
+
+const SIM = {
+  t: 0,
+  bands: {delta:35, theta:30, alpha:55, beta:30, gamma:15},
+  eyesClosed: true,
+  artifacts: [], // {type, start, dur}
+  SR: 120,          // internal virtual sample rate (Hz)
+  WINDOW_SEC: 5,
+};
+SIM.bufLen = SIM.SR*SIM.WINDOW_SEC;
+
+function sampleChannel(ch, t){
+  let alphaMul;
+  if (ch.id==='O1'||ch.id==='O2') alphaMul = SIM.eyesClosed? 2.4 : 0.35;
+  else if (ch.id==='Pz')          alphaMul = SIM.eyesClosed? 1.5 : 0.6;
+  else                             alphaMul = SIM.eyesClosed? 1.05: 0.9;
+
+  let v = 0;
+  v += SIM.bands.delta*0.30*ch.deltaW*Math.sin(2*Math.PI*1.8*t + ch.phase[0]);
+  v += SIM.bands.theta*0.30*ch.thetaW*Math.sin(2*Math.PI*6*t   + ch.phase[1]);
+  v += SIM.bands.alpha*0.30*ch.alphaW*alphaMul*Math.sin(2*Math.PI*10*t + ch.phase[2]);
+  v += SIM.bands.beta*0.22*ch.betaW*Math.sin(2*Math.PI*20*t  + ch.phase[3]);
+  v += SIM.bands.gamma*0.14*ch.gammaW*Math.sin(2*Math.PI*40*t + ch.phase[4]);
+  v += rand(-2.2,2.2); // szum tła
+
+  // artefakty
+  for(const a of SIM.artifacts){
+    const dt = t-a.start;
+    if(dt<0 || dt>a.dur) continue;
+    if(a.type==='blink' && ch.frontal){
+      v += 70*gauss(dt, 0.18, 0.09);
+    }
+    if(a.type==='emg'){
+      const w = ch.frontal? 1.0 : 0.35;
+      v += w*rand(-1,1)*38*Math.exp(-dt/0.9)*(Math.sin(2*Math.PI*rand(35,55)*t));
+    }
+    if(a.type==='move'){
+      v += 55*Math.exp(-dt/0.6);
+    }
+  }
+  return v;
+}
+
+function stepSim(dt){
+  SIM.t += dt;
+  SIM.artifacts = SIM.artifacts.filter(a => (SIM.t-a.start) < a.dur+0.05);
+  LIVE_CHANNELS.forEach(ch=>{
+    ch.buf.push(sampleChannel(ch, SIM.t));
+    if(ch.buf.length>SIM.bufLen) ch.buf.shift();
+  });
+}
+
+let lastTs = null;
+function globalLoop(ts){
+  if(lastTs===null) lastTs = ts;
+  let elapsed = (ts-lastTs)/1000;
+  lastTs = ts;
+  elapsed = Math.min(elapsed, 0.1);
+  const DT = 1/SIM.SR;
+  let guard=0;
+  App._acc = (App._acc||0) + elapsed;
+  while(App._acc >= DT && guard<400){ stepSim(DT); App._acc -= DT; guard++; }
+  App.renderActive();
+  requestAnimationFrame(globalLoop);
+}
+
+const App = { dataset:null };
+requestAnimationFrame(globalLoop);
+
+App.renderActive = function(){
+  const active = document.querySelector('.module.active');
+  if(!active) return;
+  if(active.id==='m1' && App.m1) App.m1.render();
+  if(active.id==='m5' && App.m5) App.m5.render();
+  if(active.id==='m6' && App.m6) App.m6.render();
+};
+
+/* =====================================================================
+   MODUŁ 1 — Sygnał i pasma
+===================================================================== */
+(function buildModule1(){
+  const wrap = el('section',{class:'module active', id:'m1'});
+  wrap.innerHTML = `
+    <div class="mod-head">
+      <div class="eyebrow">MODUŁ 1 / ZAJĘCIA 1</div>
+      <h2>Sygnał EEG i pasma częstotliwości</h2>
+      <p>Żywy, symulowany zapis wielokanałowy. Zmieniaj udział poszczególnych pasm i obserwuj, jak zmienia się
+      przebieg na poszczególnych elektrodach — a następnie dodaj typowe artefakty, aby zobaczyć, jak zniekształcają zapis.</p>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="panel">
+          <h3><span class="dot"></span>Pasma częstotliwości</h3>
+          ${['delta','theta','alpha','beta','gamma'].map(b=>`
+            <div class="field">
+              <label>${bandLabel(b)} <span class="val" id="m1-val-${b}">--</span></label>
+              <input type="range" min="0" max="100" value="${SIM.bands[b]}" id="m1-slider-${b}">
+            </div>
+          `).join('')}
+        </div>
+        <div class="panel">
+          <h3><span class="dot"></span>Warunek rejestracji</h3>
+          <div class="btnrow">
+            <button class="btn btn-toggle" id="m1-eyes">Oczy: zamknięte</button>
+          </div>
+          <p style="font-size:.74rem;color:var(--text-dim);margin-top:.6rem;line-height:1.5">
+            Przy zamkniętych oczach dominujący rytm alfa nasila się nad korą potyliczną (O1, O2) — to klasyczny
+            efekt blokowania alfa, który wykorzystasz też w module 4.
+          </p>
+        </div>
+        <div class="panel">
+          <h3><span class="dot"></span>Wywołaj artefakt</h3>
+          <div class="btnrow">
+            <button class="btn btn-amber" id="m1-art-blink">Mrugnięcie</button>
+            <button class="btn btn-amber" id="m1-art-emg">Napięcie mięśni (EMG)</button>
+            <button class="btn btn-amber" id="m1-art-move">Artefakt ruchowy</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3><span class="dot"></span>Zapis wielokanałowy (na żywo)</h3>
+          <div class="canvaswrap">
+            <canvas id="m1-canvas" width="900" height="360"></canvas>
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--cyan)"></i>oś czasu: 5 s okna przewijanego zapisu</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3><span class="dot"></span>Odczyt</h3>
+          <div class="readout" id="m1-readout">--</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note">Sygnał jest w całości syntetyczny: sumą sinusoid odpowiadających pasmom delta–gamma z dodanym szumem tła oraz proceduralnie generowanymi artefaktami. Służy wyłącznie ilustracji zjawisk opisanych na zajęciach 1.</div>
+  `;
+  workspace.appendChild(wrap);
+
+  function bandLabel(b){
+    const map = {delta:'Delta (0.5–4 Hz)', theta:'Theta (4–8 Hz)', alpha:'Alfa (8–13 Hz)', beta:'Beta (13–30 Hz)', gamma:'Gamma (>30 Hz)'};
+    return map[b];
+  }
+
+  ['delta','theta','alpha','beta','gamma'].forEach(b=>{
+    const s = wrap.querySelector('#m1-slider-'+b);
+    const v = wrap.querySelector('#m1-val-'+b);
+    v.textContent = s.value;
+    s.addEventListener('input', ()=>{ SIM.bands[b]=Number(s.value); v.textContent=s.value; updateReadout(); });
+  });
+
+  const eyesBtn = wrap.querySelector('#m1-eyes');
+  function refreshEyesBtn(){
+    eyesBtn.textContent = 'Oczy: ' + (SIM.eyesClosed?'zamknięte':'otwarte');
+    eyesBtn.classList.toggle('is-on', SIM.eyesClosed);
+  }
+  refreshEyesBtn();
+  eyesBtn.addEventListener('click', ()=>{ SIM.eyesClosed=!SIM.eyesClosed; refreshEyesBtn(); updateReadout(); });
+
+  wrap.querySelector('#m1-art-blink').addEventListener('click', ()=> SIM.artifacts.push({type:'blink', start:SIM.t, dur:0.5}));
+  wrap.querySelector('#m1-art-emg').addEventListener('click',   ()=> SIM.artifacts.push({type:'emg',   start:SIM.t, dur:1.1}));
+  wrap.querySelector('#m1-art-move').addEventListener('click',  ()=> SIM.artifacts.push({type:'move',  start:SIM.t, dur:0.8}));
+
+  const readoutEl = wrap.querySelector('#m1-readout');
+  function updateReadout(){
+    const b = SIM.bands;
+    const dominant = Object.keys(b).reduce((best,k)=> b[k]>b[best]? k:best, 'delta');
+    readoutEl.innerHTML = `Dominujące pasmo: <b>${bandLabel(dominant)}</b> &nbsp;·&nbsp; Warunek: <b>${SIM.eyesClosed?'oczy zamknięte':'oczy otwarte'}</b><br>
+      Amplituda pasm (0–100): delta ${b.delta} · theta ${b.theta} · alfa ${b.alpha} · beta ${b.beta} · gamma ${b.gamma}`;
+  }
+  updateReadout();
+
+  const canvas = wrap.querySelector('#m1-canvas');
+  const ctx = setupCanvas(canvas);
+
+  function render(){
+    const W=canvas.width, H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+    const rowH = H/LIVE_CHANNELS.length;
+    LIVE_CHANNELS.forEach((ch,i)=>{
+      const midY = rowH*i + rowH/2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath(); ctx.moveTo(0,midY); ctx.lineTo(W,midY); ctx.stroke();
+      ctx.fillStyle = '#557d72';
+      ctx.font = '11px IBM Plex Mono, monospace';
+      ctx.fillText(ch.id, 6, midY-rowH/2+13);
+
+      const buf = ch.buf;
+      if(buf.length<2) return;
+      ctx.strokeStyle = i%2===0? '#5eead4':'#a78bfa';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      const scaleX = W/SIM.bufLen;
+      const scaleY = (rowH*0.42)/60;
+      for(let k=0;k<buf.length;k++){
+        const x = k*scaleX;
+        const y = midY - buf[k]*scaleY;
+        if(k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    });
+  }
+  App.m1 = { render };
+})();
+
+/* =====================================================================
+   MODUŁ 2 — Montaż i impedancja
+===================================================================== */
+(function buildModule2(){
+  const wrap = el('section',{class:'module', id:'m2'});
+  wrap.innerHTML = `
+    <div class="mod-head">
+      <div class="eyebrow">MODUŁ 2 / ZAJĘCIA 2</div>
+      <h2>Montaż 10–20 i kontrola impedancji</h2>
+      <p>Kliknij elektrodę, aby nałożyć na nią żel przewodzący ("przygotuj"). Elektrody o zbyt wysokiej impedancji
+      wymagają ponownej aplikacji żelu — kliknij je ponownie.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3><span class="dot"></span>Czepek — widok z góry</h3>
+        <div id="m2-headwrap"></div>
+        <div class="legend">
+          <span><i style="background:#4b5a57"></i>nieprzygotowana</span>
+          <span><i style="background:var(--amber)"></i>przygotowywanie</span>
+          <span><i style="background:var(--green)"></i>&lt;5 kΩ</span>
+          <span><i style="background:var(--amber)"></i>5–10 kΩ</span>
+          <span><i style="background:var(--red)"></i>&gt;10 kΩ</span>
+        </div>
+        <div class="btnrow" style="margin-top:.9rem">
+          <button class="btn btn-primary" id="m2-prep-all">Przygotuj wszystkie</button>
+          <button class="btn" id="m2-remeasure">Zmierz ponownie wszystkie gotowe</button>
+          <button class="btn btn-red" id="m2-reset">Resetuj czepek</button>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3><span class="dot"></span>Status montażu</h3>
+          <div class="readout" id="m2-readout">--</div>
+        </div>
+        <div class="panel">
+          <h3><span class="dot"></span>Tabela impedancji</h3>
+          <table class="datatable" id="m2-table">
+            <thead><tr><th>Elektroda</th><th>Status</th><th>Impedancja</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note">Wartości impedancji są losowane proceduralnie w realistycznym zakresie (2–25 kΩ) i nie pochodzą z rzeczywistego pomiaru sprzętowego.</div>
+  `;
+  workspace.appendChild(wrap);
+
+  const state = {};
+  ELECTRODES.forEach(e=> state[e.id] = {status:'unprepared', impedance:null});
+
+  const headwrap = wrap.querySelector('#m2-headwrap');
+  headwrap.innerHTML = headSvg();
+  const svg = headwrap.querySelector('svg');
+  ELECTRODES.forEach(e=>{
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','elec');
+    g.setAttribute('data-id', e.id);
+    g.innerHTML = `<circle cx="${e.x}" cy="${e.y}" r="7"></circle><text x="${e.x}" y="${e.y+2.3}" text-anchor="middle">${e.id}</text>`;
+    g.addEventListener('click', ()=> onElectrodeClick(e.id));
+    svg.appendChild(g);
+  });
+
+  function colorFor(id){
+    const s = state[id];
+    if(s.status==='unprepared') return '#4b5a57';
+    if(s.status==='preparing') return '#f5c04a';
+    if(s.impedance<5) return '#7ee08a';
+    if(s.impedance<=10) return '#f5c04a';
+    return '#f2685c';
+  }
+
+  function onElectrodeClick(id){
+    const s = state[id];
+    if(s.status==='preparing') return;
+    s.status='preparing';
+    redraw();
+    setTimeout(()=>{
+      if(s.impedance===null){
+        s.impedance = Math.random()<0.72 ? rand(2,9) : rand(10,26);
+      } else {
+        s.impedance = Math.max(1.5, s.impedance*rand(0.25,0.5));
+      }
+      s.status='ready';
+      redraw();
+    }, 850);
+  }
+
+  wrap.querySelector('#m2-prep-all').addEventListener('click', ()=>{
+    ELECTRODES.forEach((e,i)=> setTimeout(()=> onElectrodeClick(e.id), i*90));
+  });
+  wrap.querySelector('#m2-remeasure').addEventListener('click', ()=>{
+    ELECTRODES.forEach(e=>{
+      const s = state[e.id];
+      if(s.status==='ready') s.impedance = Math.max(1.5, s.impedance + rand(-1.5,1.5));
+    });
+    redraw();
+  });
+  wrap.querySelector('#m2-reset').addEventListener('click', ()=>{
+    ELECTRODES.forEach(e=> state[e.id]={status:'unprepared', impedance:null});
+    redraw();
+  });
+
+  const readoutEl = wrap.querySelector('#m2-readout');
+  const tbody = wrap.querySelector('#m2-table tbody');
+  const hdrMontage = document.getElementById('hdr-montage');
+
+  function redraw(){
+    ELECTRODES.forEach(e=>{
+      const g = svg.querySelector(`.elec[data-id="${e.id}"]`);
+      g.classList.toggle('preparing', state[e.id].status==='preparing');
+      g.querySelector('circle').setAttribute('fill', colorFor(e.id));
+    });
+    const ready = ELECTRODES.filter(e=> state[e.id].status==='ready');
+    const good  = ready.filter(e=> state[e.id].impedance<10);
+    const avg   = ready.length? ready.reduce((s,e)=> s+state[e.id].impedance,0)/ready.length : 0;
+    readoutEl.innerHTML = `Przygotowane: <b>${ready.length}/19</b> &nbsp;·&nbsp; W normie (&lt;10 kΩ): <b>${good.length}/${ready.length||0}</b> &nbsp;·&nbsp; Średnia impedancja: <b>${ready.length? fmt(avg,1):'--'} kΩ</b>`;
+    hdrMontage.textContent = `${ready.length}/19`;
+
+    tbody.innerHTML = ELECTRODES.map(e=>{
+      const s = state[e.id];
+      const stLabel = s.status==='unprepared'?'nieprzygotowana':(s.status==='preparing'?'przygotowywanie…':'gotowa');
+      const imp = s.impedance===null?'--':fmt(s.impedance,1)+' kΩ';
+      const cls = s.impedance===null?'':(s.impedance<5?'':(s.impedance<=10?'style="color:var(--amber)"':'style="color:var(--red)"'));
+      return `<tr><td>${e.id}</td><td>${stLabel}</td><td ${cls}>${imp}</td></tr>`;
+    }).join('');
+  }
+  redraw();
+})();
+
+/* =====================================================================
+   MODUŁ 3 — Paradygmat oddball
+===================================================================== */
+(function buildModule3(){
+  const wrap = el('section',{class:'module', id:'m3'});
+  wrap.innerHTML = `
+    <div class="mod-head">
+      <div class="eyebrow">MODUŁ 3 / ZAJĘCIA 3</div>
+      <h2>Projektowanie i rejestracja paradygmatu oddball</h2>
+      <p>Skonfiguruj parametry paradygmatu, uruchom symulowaną rejestrację i obejrzyj dziennik znaczników (triggerów).
+      Wygenerowany zestaw danych zostanie użyty w module 4 do analizy ERP.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3><span class="dot"></span>Parametry paradygmatu</h3>
+        <div class="field">
+          <label>Modalność</label>
+          <select id="m3-modality">
+            <option value="wzrokowa">Wzrokowa</option>
+            <option value="słuchowa">Słuchowa</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Udział bodźców docelowych <span class="val" id="m3-val-ratio">20%</span></label>
+          <input type="range" min="10" max="30" value="20" id="m3-ratio">
+        </div>
+        <div class="field">
+          <label>ISI (odstęp międzybodźcowy) <span class="val" id="m3-val-isi">800 ms</span></label>
+          <input type="range" min="400" max="1200" step="50" value="800" id="m3-isi">
+        </div>
+        <div class="field">
+          <label>Liczba prób <span class="val" id="m3-val-n">100</span></label>
+          <input type="range" min="40" max="200" step="10" value="100" id="m3-n">
+        </div>
+        <div class="btnrow">
+          <button class="btn btn-primary" id="m3-run">Uruchom rejestrację</button>
+        </div>
+        <p style="font-size:.72rem;color:var(--text-faint);margin-top:.7rem;line-height:1.5">
+          Symulacja odtwarza sekwencję w przyspieszonym tempie; etykiety czasowe w dzienniku odpowiadają rzeczywistemu ISI, jakie miałoby badanie.
+        </p>
+      </div>
+      <div>
+        <div class="panel">
+          <h3><span class="dot"></span>Prezentacja bodźca</h3>
+          <div class="stim-stage"><div class="stim-shape" id="m3-shape"></div></div>
+        </div>
+        <div class="panel">
+          <h3><span class="dot"></span>Dziennik znaczników (event log)</h3>
+          <div class="eventlog" id="m3-log"></div>
+        </div>
+        <div class="panel">
+          <h3><span class="dot"></span>Podsumowanie</h3>
+          <div class="readout" id="m3-readout">Rejestracja nie została jeszcze uruchomiona.</div>
+        </div>
+      </div>
+    </div>
+  `;
+  workspace.appendChild(wrap);
+
+  const ratioSlider = wrap.querySelector('#m3-ratio');
+  const isiSlider = wrap.querySelector('#m3-isi');
+  const nSlider = wrap.querySelector('#m3-n');
+  ratioSlider.addEventListener('input', ()=> wrap.querySelector('#m3-val-ratio').textContent = ratioSlider.value+'%');
+  isiSlider.addEventListener('input', ()=> wrap.querySelector('#m3-val-isi').textContent = isiSlider.value+' ms');
+  nSlider.addEventListener('input', ()=> wrap.querySelector('#m3-val-n').textContent = nSlider.value);
+
+  const runBtn = wrap.querySelector('#m3-run');
+  const shapeEl = wrap.querySelector('#m3-shape');
+  const logEl = wrap.querySelector('#m3-log');
+  const readoutEl = wrap.querySelector('#m3-readout');
+  const hdrDataset = document.getElementById('hdr-dataset');
+
+  function genSequence(n, pTarget){
+    const seq=[]; let last=false;
+    for(let i=0;i<n;i++){
+      const isT = Math.random()<pTarget && !last;
+      seq.push(isT?'T':'S'); last=isT;
+    }
+    return seq;
+  }
+
+  function genEpoch(isTarget){
+    // 1000 samples = -200..800 ms, 1 ms/sample
+    const arr = new Array(1000);
+    const lat = 350+rand(-30,30), sigma=42, amp = isTarget? rand(9,15): rand(0,2);
+    for(let i=0;i<1000;i++){
+      const ms = i-200;
+      let v = rand(-3,3) + 2*Math.sin(2*Math.PI*(ms/1000)*6);
+      v += amp*gauss(ms, lat, sigma);
+      arr[i]=v;
+    }
+    return arr;
+  }
+
+  function timeLabel(ms){
+    const m = Math.floor(ms/60000);
+    const s = ((ms%60000)/1000).toFixed(2).padStart(5,'0');
+    return `${String(m).padStart(2,'0')}:${s}`;
+  }
+
+  runBtn.addEventListener('click', ()=>{
+    runBtn.disabled = true;
+    const n = Number(nSlider.value);
+    const pTarget = Number(ratioSlider.value)/100;
+    const isi = Number(isiSlider.value);
+    const seq = genSequence(n, pTarget);
+    logEl.innerHTML='';
+    let i=0;
+    const epochsStd=[], epochsTgt=[];
+    const stepAnim = ()=>{
+      if(i>=seq.length){
+        runBtn.disabled=false;
+        App.dataset = {seq, epochsStd, epochsTgt, isi};
+        hdrDataset.textContent = `oddball, n=${n}`;
+        readoutEl.innerHTML = `Wygenerowano <b>${epochsStd.length}</b> prób standardowych i <b>${epochsTgt.length}</b> prób docelowych.
+          Zestaw danych jest teraz dostępny w module 4 ("ERP, widmo, źródła").`;
+        return;
+      }
+      const isT = seq[i]==='T';
+      shapeEl.className = 'stim-shape show ' + (isT?'tgt':'std');
+      shapeEl.textContent = isT? 'TARGET':'STD';
+      const evLine = document.createElement('div');
+      evLine.className = 'ev'+(isT?' target':'');
+      evLine.textContent = `t=${timeLabel(i*isi)}  bodziec: ${isT?'DOCELOWY':'standardowy'}  trigger: ${isT?'S2':'S1'}`;
+      logEl.appendChild(evLine);
+      logEl.scrollTop = logEl.scrollHeight;
+      (isT? epochsTgt: epochsStd).push(genEpoch(isT));
+      i++;
+      setTimeout(()=>{ shapeEl.classList.remove('show'); setTimeout(stepAnim, 60); }, 140);
+    };
+    stepAnim();
+  });
+})();
+
+/* =====================================================================
+   MODUŁ 4 — ERP, widmo, źródła
+===================================================================== */
+(function buildModule4(){
+  const wrap = el('section',{class:'module', id:'m4'});
+  wrap.innerHTML = `
+    <div class="mod-head">
+      <div class="eyebrow">MODUŁ 4 / ZAJĘCIA 4</div>
+      <h2>Analiza potencjałów wywołanych, widma i topografii źródeł</h2>
+      <p>Trzy uzupełniające się spojrzenia na te same dane: <em>co</em> (widmo), <em>kiedy</em> (ERP) i <em>gdzie</em> (przybliżona topografia źródeł).</p>
+    </div>
+
+    <div class="panel">
+      <h3><span class="dot"></span>1 · Uśrednione potencjały wywołane (ERP)</h3>
+      <div class="btnrow" style="margin-bottom:.8rem">
+        <button class="btn btn-primary" id="m4-avg">Segmentuj i uśrednij</button>
+        <button class="btn" id="m4-fallback">Użyj przykładowego zestawu danych</button>
+      </div>
+      <canvas id="m4-erp-canvas" width="900" height="280"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--cyan)"></i>bodźce standardowe</span>
+        <span><i style="background:var(--amber)"></i>bodźce docelowe</span>
+        <span><i style="background:rgba(242,104,92,.35)"></i>okno 250–500 ms</span>
+      </div>
+      <div class="readout" id="m4-erp-readout" style="margin-top:.8rem">Brak jeszcze wyznaczonej średniej.</div>
+    </div>
+
+    <div class="grid-3col">
+      <div class="panel">
+        <h3><span class="dot"></span>2 · Widmo mocy</h3>
+        <div class="btnrow" style="margin-bottom:.7rem">
+          <button class="btn btn-toggle" id="m4-eyes">Oczy: zamknięte</button>
+        </div>
+        <canvas id="m4-spec-canvas" width="280" height="200"></canvas>
+        <div class="readout" id="m4-spec-readout" style="margin-top:.7rem">--</div>
+      </div>
+      <div class="panel">
+        <h3><span class="dot"></span>3 · Przybliżona topografia źródeł</h3>
+        <div id="m4-headwrap"></div>
+        <p style="font-size:.7rem;color:var(--text-faint);margin-top:.5rem;line-height:1.5">
+          Ilustracyjny rozkład natężenia P300 (typowa dominacja ciemieniowa). Nie jest to pełne rozwiązanie
+          zagadnienia odwrotnego — jedynie poglądowa wizualizacja.
+        </p>
+      </div>
+      <div class="panel">
+        <h3><span class="dot"></span>Notatka / wniosek</h3>
+        <textarea class="textbox" id="m4-notes" placeholder="Zapisz tu swój wniosek dot. lokalizacji generatorów i ograniczeń analizy źródłowej…"></textarea>
+      </div>
+    </div>
+  `;
+  workspace.appendChild(wrap);
+
+  // --- ERP part ---
+  const erpCanvas = wrap.querySelector('#m4-erp-canvas');
+  const erpCtx = setupCanvas(erpCanvas);
+  const erpReadout = wrap.querySelector('#m4-erp-readout');
+  let lastPeak = {amp:11, lat:360};
+
+  function average(epochs){
+    const n=epochs.length, out=new Array(1000).fill(0);
+    epochs.forEach(e=>{ for(let i=0;i<1000;i++) out[i]+=e[i]/n; });
+    return out;
+  }
+  function sampleDataset(){
+    const std=[], tgt=[];
+    for(let i=0;i<60;i++) std.push(genSampleEpoch(false));
+    for(let i=0;i<15;i++) tgt.push(genSampleEpoch(true));
+    return {epochsStd:std, epochsTgt:tgt};
+  }
+  function genSampleEpoch(isTarget){
+    const arr=new Array(1000);
+    const lat=350+rand(-30,30), sigma=42, amp = isTarget? rand(9,15): rand(0,2);
+    for(let i=0;i<1000;i++){
+      const ms=i-200;
+      arr[i] = rand(-3,3) + 2*Math.sin(2*Math.PI*(ms/1000)*6) + amp*gauss(ms,lat,sigma);
+    }
+    return arr;
+  }
+
+  function drawERP(std, tgt){
+    const W=erpCanvas.width, H=erpCanvas.height;
+    erpCtx.clearRect(0,0,W,H);
+    const x0=46, x1=W-14, y0=18, y1=H-30;
+    const msToX = ms => x0 + (ms+200)/1000*(x1-x0);
+    const vScale = 8; // px per µV
+    const midY = (y0+y1)/2;
+    const ampToY = v => midY - v*vScale;
+
+    // window highlight 250-500ms
+    erpCtx.fillStyle='rgba(242,104,92,0.10)';
+    erpCtx.fillRect(msToX(250),y0,msToX(500)-msToX(250), y1-y0);
+
+    // gridlines every 100ms
+    erpCtx.strokeStyle='rgba(255,255,255,0.06)'; erpCtx.fillStyle='#557d72'; erpCtx.font='10px IBM Plex Mono';
+    for(let ms=-200;ms<=800;ms+=100){
+      const x=msToX(ms);
+      erpCtx.beginPath(); erpCtx.moveTo(x,y0); erpCtx.lineTo(x,y1); erpCtx.stroke();
+      erpCtx.fillText(ms+'', x-10, y1+14);
+    }
+    erpCtx.strokeStyle='rgba(255,255,255,0.18)';
+    erpCtx.beginPath(); erpCtx.moveTo(x0,midY); erpCtx.lineTo(x1,midY); erpCtx.stroke();
+    erpCtx.beginPath(); erpCtx.moveTo(msToX(0),y0); erpCtx.lineTo(msToX(0),y1); erpCtx.stroke();
+    erpCtx.fillText('0 ms (bodziec)', msToX(0)-24, y0-4);
+
+    function drawCurve(data,color){
+      erpCtx.strokeStyle=color; erpCtx.lineWidth=1.8; erpCtx.beginPath();
+      for(let i=0;i<1000;i+=2){
+        const ms=i-200, x=msToX(ms), y=ampToY(data[i]);
+        if(i===0) erpCtx.moveTo(x,y); else erpCtx.lineTo(x,y);
+      }
+      erpCtx.stroke();
+    }
+    drawCurve(std, '#5eead4');
+    drawCurve(tgt, '#f5c04a');
+  }
+
+  function runAverage(source){
+    const stdAvg = average(source.epochsStd);
+    const tgtAvg = average(source.epochsTgt);
+    drawERP(stdAvg, tgtAvg);
+    let peakVal=-999, peakMs=0;
+    for(let ms=250; ms<=500; ms++){
+      const v = tgtAvg[ms+200];
+      if(v>peakVal){ peakVal=v; peakMs=ms; }
+    }
+    lastPeak = {amp:peakVal, lat:peakMs};
+    erpReadout.innerHTML = `Komponent P300 (docelowe, Pz): amplituda <b>${fmt(peakVal,1)} µV</b>, latencja <b>${peakMs} ms</b>.
+      Liczba uśrednionych prób: standardowe <b>${source.epochsStd.length}</b>, docelowe <b>${source.epochsTgt.length}</b>.`;
+    updateTopomap();
+  }
+
+  wrap.querySelector('#m4-avg').addEventListener('click', ()=>{
+    if(App.dataset && App.dataset.epochsTgt && App.dataset.epochsTgt.length>3){
+      runAverage(App.dataset);
+    } else {
+      erpReadout.innerHTML = `<span class="warn">Brak zestawu danych z modułu 3 (lub zbyt mało prób docelowych).</span> Kliknij "Użyj przykładowego zestawu danych" albo wróć do modułu 3 i uruchom rejestrację.`;
+    }
+  });
+  wrap.querySelector('#m4-fallback').addEventListener('click', ()=> runAverage(sampleDataset()));
+
+  // --- Spectrum part ---
+  const specCanvas = wrap.querySelector('#m4-spec-canvas');
+  const specCtx = setupCanvas(specCanvas);
+  const specEyesBtn = wrap.querySelector('#m4-eyes');
+  const specReadout = wrap.querySelector('#m4-spec-readout');
+
+  function refreshSpecEyesBtn(){
+    specEyesBtn.textContent = 'Oczy: '+(SIM.eyesClosed?'zamknięte':'otwarte');
+    specEyesBtn.classList.toggle('is-on', SIM.eyesClosed);
+  }
+  refreshSpecEyesBtn();
+  specEyesBtn.addEventListener('click', ()=>{ SIM.eyesClosed=!SIM.eyesClosed; refreshSpecEyesBtn(); drawSpectrum(); });
+
+  function computeBandPower(){
+    const b=SIM.bands;
+    const alphaMul = SIM.eyesClosed? 2.4: 0.5;
+    return {
+      delta:(b.delta*0.3)**2,
+      theta:(b.theta*0.3)**2,
+      alpha:(b.alpha*0.3*alphaMul)**2,
+      beta:(b.beta*0.22)**2,
+      gamma:(b.gamma*0.14)**2,
+    };
+  }
+  function drawSpectrum(){
+    const p = computeBandPower();
+    const keys=['delta','theta','alpha','beta','gamma'];
+    const colors=['#7c93ff','#a78bfa','#5eead4','#f5c04a','#f2685c'];
+    const max = Math.max(...keys.map(k=>p[k]),1);
+    const W=specCanvas.width,H=specCanvas.height, x0=10,x1=W-10,y0=10,y1=H-24;
+    specCtx.clearRect(0,0,W,H);
+    const bw=(x1-x0)/keys.length;
+    keys.forEach((k,i)=>{
+      const h=(p[k]/max)*(y1-y0);
+      specCtx.fillStyle=colors[i];
+      specCtx.fillRect(x0+i*bw+bw*0.18, y1-h, bw*0.64, h);
+      specCtx.fillStyle='#7fa89a'; specCtx.font='9px IBM Plex Mono';
+      specCtx.fillText(k.slice(0,3), x0+i*bw+bw*0.22, y1+13);
+    });
+    const alphaShare = (p.alpha/keys.reduce((s,k)=>s+p[k],0)*100);
+    specReadout.innerHTML = `Udział mocy alfa: <b>${fmt(alphaShare,0)}%</b> mocy całkowitej (${SIM.eyesClosed?'oczy zamknięte — blokada odwrócona':'oczy otwarte — blokada alfa'}).`;
+  }
+  drawSpectrum();
+  // Re-render spectrum whenever module1 sliders change: cheap approach, just recompute on module switch
+  document.querySelectorAll('.navitem').forEach(b=> b.addEventListener('click', ()=>{ if(b.getAttribute('data-mod')==='m4'){ refreshSpecEyesBtn(); drawSpectrum(); } }));
+
+  // --- Topomap part ---
+  const headwrap = wrap.querySelector('#m4-headwrap');
+  headwrap.innerHTML = headSvg();
+  const svg = headwrap.querySelector('svg');
+  const TOPO_WEIGHTS = {Fp1:0.12,Fp2:0.12,F3:0.22,Fz:0.3,F4:0.22,C3:0.5,Cz:0.62,C4:0.5,P3:0.85,Pz:1.0,P4:0.85,O1:0.42,O2:0.42,F7:0.15,F8:0.15,T3:0.2,T4:0.2,T5:0.3,T6:0.3};
+  ELECTRODES.forEach(e=>{
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.innerHTML = `<circle cx="${e.x}" cy="${e.y}" r="8" data-id="${e.id}"></circle>`;
+    svg.appendChild(g);
+  });
+  function updateTopomap(){
+    const norm = clamp(lastPeak.amp/15, 0.05, 1);
+    ELECTRODES.forEach(e=>{
+      const w = (TOPO_WEIGHTS[e.id]||0.2) * norm;
+      const c = svg.querySelector(`circle[data-id="${e.id}"]`);
+      c.setAttribute('fill', lerpColor('#12333a', '#f2685c', clamp(w,0,1)));
+    });
+  }
+  updateTopomap();
+})();
+
+/* =====================================================================
+   MODUŁ 5 — Pipeline i ICA
+===================================================================== */
+(function buildModule5(){
+  const wrap = el('section',{class:'module', id:'m5'});
+  wrap.innerHTML = `
+    <div class="mod-head">
+      <div class="eyebrow">MODUŁ 5 / ZAJĘCIA 5</div>
+      <h2>Pipeline przetwarzania: filtrowanie i korekcja ICA</h2>
+      <p>Stały, przygotowany zapis (kanał Fp1) zawierający dryf, zakłócenie sieciowe, mrugnięcie i napięcie mięśniowe.
+      Włączaj i wyłączaj filtry, a następnie rozłóż sygnał na składowe ICA i usuń te, które odpowiadają artefaktom.</p>
+    </div>
+
+    <div class="panel">
+      <h3><span class="dot"></span>Zapis surowy / przefiltrowany</h3>
+      <canvas id="m5-raw-canvas" width="900" height="200"></canvas>
+      <div class="btnrow" style="margin-top:.8rem">
+        <button class="btn btn-toggle" id="m5-hp">Filtr górnoprzepustowy</button>
+        <button class="btn btn-toggle" id="m5-lp">Filtr dolnoprzepustowy</button>
+        <button class="btn btn-toggle" id="m5-notch">Filtr sieciowy (notch 50 Hz)</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3><span class="dot"></span>Składowe niezależne (ICA)</h3>
+      <div class="grid-3col" id="m5-ica-grid" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="btnrow" style="margin-top:.9rem">
+        <button class="btn btn-primary" id="m5-reconstruct">Rekonstruuj sygnał</button>
+      </div>
+      <div class="readout" id="m5-ica-readout" style="margin-top:.8rem">--</div>
+    </div>
+
+    <div class="panel">
+      <h3><span class="dot"></span>Wpływ korekcji na liczbę odrzuconych epok</h3>
+      <div class="readout" id="m5-epoch-readout">--</div>
+    </div>
+  `;
+  workspace.appendChild(wrap);
+
+  const N=1200, DUR=6; // 1200 samples over 6s => 200Hz
+  const brain=new Array(N), drift=new Array(N), hum=new Array(N), blink=new Array(N), muscle=new Array(N);
+  for(let i=0;i<N;i++){
+    const t=i/N*DUR;
+    brain[i]= 10*Math.sin(2*Math.PI*10*t+0.4) + 6*Math.sin(2*Math.PI*5*t+1.1) + rand(-2,2);
+    drift[i]= 15*Math.sin(2*Math.PI*0.06*t);
+    hum[i]  = 6*Math.sin(2*Math.PI*50*t);
+    blink[i]= 70*gauss(t,2.0,0.09);
+    muscle[i]= (t>4.4&&t<5.1) ? rand(-1,1)*30*Math.sin(2*Math.PI*rand(35,55)*t) : 0;
+  }
+
+  const flags = {hp:true, lp:false, notch:true, removeBlink:false, removeMuscle:false};
+
+  function movingAverage(arr, win){
+    const out=new Array(arr.length);
+    for(let i=0;i<arr.length;i++){
+      let s=0,c=0;
+      for(let k=-win;k<=win;k++){ const j=i+k; if(j>=0&&j<arr.length){ s+=arr[j]; c++; } }
+      out[i]=s/c;
+    }
+    return out;
+  }
+
+  function computeFinal(){
+    let sig = new Array(N);
+    for(let i=0;i<N;i++){
+      sig[i] = brain[i]
+        + (flags.hp? 0: drift[i])
+        + (flags.notch? 0: hum[i])
+        + (flags.removeBlink? 0: blink[i])
+        + (flags.removeMuscle? 0: muscle[i]);
+    }
+    if(flags.lp) sig = movingAverage(sig, 3);
+    return sig;
+  }
+
+  const rawCanvas = wrap.querySelector('#m5-raw-canvas');
+  const rawCtx = setupCanvas(rawCanvas);
+  function drawSignal(sig){
+    const W=rawCanvas.width,H=rawCanvas.height;
+    rawCtx.clearRect(0,0,W,H);
+    rawCtx.strokeStyle='rgba(255,255,255,0.06)';
+    rawCtx.beginPath(); rawCtx.moveTo(0,H/2); rawCtx.lineTo(W,H/2); rawCtx.stroke();
+    rawCtx.strokeStyle='#5eead4'; rawCtx.lineWidth=1.4; rawCtx.beginPath();
+    const scaleY = (H*0.42)/110;
+    sig.forEach((v,i)=>{
+      const x=i/N*W, y=H/2 - v*scaleY;
+      if(i===0) rawCtx.moveTo(x,y); else rawCtx.lineTo(x,y);
+    });
+    rawCtx.stroke();
+    rawCtx.fillStyle='#557d72'; rawCtx.font='10px IBM Plex Mono';
+    rawCtx.fillText('Fp1', 6, 14);
+  }
+
+  function refreshFilterButtons(){
+    wrap.querySelector('#m5-hp').classList.toggle('is-on', flags.hp);
+    wrap.querySelector('#m5-lp').classList.toggle('is-on', flags.lp);
+    wrap.querySelector('#m5-notch').classList.toggle('is-on', flags.notch);
+  }
+  refreshFilterButtons();
+  wrap.querySelector('#m5-hp').addEventListener('click', ()=>{ flags.hp=!flags.hp; refreshFilterButtons(); drawSignal(computeFinal()); });
+  wrap.querySelector('#m5-lp').addEventListener('click', ()=>{ flags.lp=!flags.lp; refreshFilterButtons(); drawSignal(computeFinal()); });
+  wrap.querySelector('#m5-notch').addEventListener('click', ()=>{ flags.notch=!flags.notch; refreshFilterButtons(); drawSignal(computeFinal()); });
+
+  // ICA cards
+  const icaGrid = wrap.querySelector('#m5-ica-grid');
+  const COMPONENTS = [
+    {id:'ic1', name:'Składowa 1', tag:'aktywność korowa', data:brain, artifact:false},
+    {id:'ic2', name:'Składowa 2', tag:'mrugnięcia — topografia czołowa', data:blink, artifact:true, key:'removeBlink'},
+    {id:'ic3', name:'Składowa 3', tag:'EMG — wysoka częstotliwość', data:muscle, artifact:true, key:'removeMuscle'},
+    {id:'ic4', name:'Składowa 4', tag:'aktywność korowa', data:drift.map(v=>v*0.7+rand(-2,2)), artifact:false},
+  ];
+  COMPONENTS.forEach(c=>{
+    const card = el('div',{class:'icacard', id:'card-'+c.id},[
+      el('div',{class:'icahead'},[
+        el('span',{class:'icaname'},[c.name]),
+      ]),
+      el('div',{class:'icatag'},[c.tag]),
+      el('canvas',{id:'canv-'+c.id, width:'180', height:'44'}),
+      el('label',{class:'checkline'},[
+        el('input', Object.assign({type:'checkbox', id:'chk-'+c.id}, c.artifact? {} : {disabled:'disabled'})),
+        c.artifact? 'oznacz do usunięcia' : 'aktywność neuronalna (nie usuwaj)'
+      ])
+    ]);
+    icaGrid.appendChild(card);
+    const cv = card.querySelector('canvas');
+    const cctx = cv.getContext('2d');
+    cctx.strokeStyle = c.artifact? '#f2685c':'#5eead4';
+    cctx.beginPath();
+    const step = Math.max(1, Math.floor(N/180));
+    const maxAbs = Math.max(...c.data.map(Math.abs),1);
+    const pts = c.data.filter((_,i)=>i%step===0);
+    pts.forEach((v,i)=>{
+      const x = pts.length>1 ? i/(pts.length-1)*180 : 0;
+      const y = 22-(v/maxAbs)*18;
+      if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y);
+    });
+    cctx.stroke();
+    if(c.artifact){
+      const chk = card.querySelector('#chk-'+c.id);
+      chk.addEventListener('change', ()=>{
+        flags[c.key] = chk.checked;
+        card.classList.toggle('marked', chk.checked);
+      });
+    }
+  });
+
+  const icaReadout = wrap.querySelector('#m5-ica-readout');
+  const epochReadout = wrap.querySelector('#m5-epoch-readout');
+  wrap.querySelector('#m5-reconstruct').addEventListener('click', ()=>{
+    drawSignal(computeFinal());
+    const removed = [flags.removeBlink?'mrugnięcia':null, flags.removeMuscle?'EMG':null].filter(Boolean);
+    icaReadout.innerHTML = removed.length
+      ? `Zrekonstruowano sygnał po usunięciu składowych: <b>${removed.join(', ')}</b>.`
+      : `Zrekonstruowano sygnał bez usuwania żadnej składowej — artefakty pozostają widoczne.`;
+    const removedCount = (flags.removeBlink?1:0)+(flags.removeMuscle?1:0);
+    const before = 8, after = Math.max(2, before - removedCount*3);
+    epochReadout.innerHTML = `Epoki odrzucone bez korekcji ICA: <b>${before}/40</b> &nbsp;·&nbsp; po korekcji: <b>${after}/40</b>.`;
+  });
+
+  drawSignal(computeFinal());
+  App.m5 = { render: function(){ /* static demo, no continuous animation needed */ } };
+})();
+
+/* =====================================================================
+   MODUŁ 6 — EMG / EOG / EKG / GSR / eyetracking
+===================================================================== */
+(function buildModule6(){
+  const wrap = el('section',{class:'module', id:'m6'});
+  wrap.innerHTML = `
+    <div class="mod-head">
+      <div class="eyebrow">MODUŁ 6 / ZAJĘCIA 6</div>
+      <h2>Inne metody psychofizjologiczne</h2>
+      <p>Symulacja reakcji skórno-galwanicznej i EMG mimicznego na bodźce emocjonalne, zapisu EKG oraz prostego badania eyetrackingowego.</p>
+    </div>
+
+    <div class="panel">
+      <h3><span class="dot"></span>GSR i EMG — reakcja na bodźce emocjonalne</h3>
+      <div class="stimcards" id="m6-stimcards"></div>
+      <canvas id="m6-gsr-canvas" width="900" height="150" style="margin-top:.9rem"></canvas>
+      <table class="datatable" id="m6-trial-table" style="margin-top:.8rem">
+        <thead><tr><th>#</th><th>Bodziec</th><th>Walencja</th><th>Amplituda GSR (µS)</th><th>Aktywność EMG (j.w.)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3><span class="dot"></span>EKG</h3>
+        <div class="field">
+          <label>Częstość akcji serca <span class="val" id="m6-val-bpm">72 BPM</span></label>
+          <input type="range" min="50" max="120" value="72" id="m6-bpm">
+        </div>
+        <div class="field">
+          <label>Zmienność rytmu (HRV) <span class="val" id="m6-val-hrv">5%</span></label>
+          <input type="range" min="0" max="15" value="5" id="m6-hrv">
+        </div>
+        <canvas id="m6-ekg-canvas" width="500" height="150"></canvas>
+        <div class="readout" id="m6-ekg-readout" style="margin-top:.7rem">--</div>
+      </div>
+      <div class="panel">
+        <h3><span class="dot"></span>Eyetracking</h3>
+        <p style="font-size:.74rem;color:var(--text-dim);margin-bottom:.6rem">Kliknij i przytrzymaj na materiale, aby dodać fiksację (czas przytrzymania = czas trwania fiksacji).</p>
+        <canvas id="m6-eye-canvas" width="500" height="320"></canvas>
+        <div class="btnrow" style="margin-top:.7rem">
+          <button class="btn btn-toggle is-on" id="m6-eye-scan">Ścieżka skanowania</button>
+          <button class="btn btn-toggle" id="m6-eye-heat">Mapa cieplna</button>
+          <button class="btn btn-red" id="m6-eye-clear">Wyczyść fiksacje</button>
+        </div>
+        <div class="readout" id="m6-eye-readout" style="margin-top:.7rem">Liczba fiksacji: 0</div>
+      </div>
+    </div>
+  `;
+  workspace.appendChild(wrap);
+
+  /* ---- GSR / EMG ---- */
+  const STIMS = [
+    {label:'Obraz 1', valence:0.8,  desc:'przyjemny',   color:'#7ee08a'},
+    {label:'Obraz 2', valence:0.3,  desc:'lekko przyjemny', color:'#5eead4'},
+    {label:'Obraz 3', valence:0.0,  desc:'neutralny',   color:'#7fa89a'},
+    {label:'Obraz 4', valence:-0.4, desc:'lekko nieprzyjemny', color:'#f5c04a'},
+    {label:'Obraz 5', valence:-0.85,desc:'nieprzyjemny',color:'#f2685c'},
+  ];
+  const cardsEl = wrap.querySelector('#m6-stimcards');
+  let selectedStim = 0;
+  STIMS.forEach((s,i)=>{
+    const c = el('div',{class:'stimcard'+(i===0?' selected':''), onclick:()=>{
+      selectedStim=i;
+      cardsEl.querySelectorAll('.stimcard').forEach((n,idx)=> n.classList.toggle('selected', idx===i));
+    }},[
+      el('div',{class:'sw', style:`background:${s.color}`}),
+      el('div',{},[s.label]),
+      el('div',{style:'color:var(--text-faint)'},[s.desc]),
+    ]);
+    cardsEl.appendChild(c);
+  });
+  const presentBtn = el('button',{class:'btn btn-primary', style:'margin-top:.8rem', onclick: presentStimulus},['Prezentuj wybrany bodziec']);
+  cardsEl.after(presentBtn);
+
+  const gsrCanvas = wrap.querySelector('#m6-gsr-canvas');
+  const gsrCtx = setupCanvas(gsrCanvas);
+  let gsrTrial = null; // {start, valence}
+  let trialCount=0;
+  const tbody = wrap.querySelector('#m6-trial-table tbody');
+
+  function presentStimulus(){
+    trialCount++;
+    const s = STIMS[selectedStim];
+    gsrTrial = {start: performance.now(), valence: s.valence};
+    const gsrAmp = 0.3 + Math.abs(s.valence)*1.2 + rand(-0.05,0.05);
+    const emgAmp = s.valence<0 ? (0.3 + (-s.valence)*1.5) : (0.1 + s.valence*0.3);
+    gsrTrial.gsrAmp = gsrAmp; gsrTrial.emgAmp = emgAmp;
+    animateTrial();
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${trialCount}</td><td>${s.label}</td><td>${s.desc} (${s.valence>0?'+':''}${s.valence})</td><td>${fmt(gsrAmp,2)}</td><td>${fmt(emgAmp,2)}</td>`;
+    tbody.prepend(row);
+  }
+
+  function animateTrial(){
+    const dur=3200;
+    const t0=performance.now();
+    function frame(){
+      const el = performance.now()-t0;
+      drawGsrEmg(el/1000, gsrTrial.gsrAmp, gsrTrial.emgAmp);
+      if(el<dur) requestAnimationFrame(frame);
+    }
+    frame();
+  }
+  function drawGsrEmg(tsec, gsrAmp, emgAmp){
+    const W=gsrCanvas.width,H=gsrCanvas.height;
+    gsrCtx.clearRect(0,0,W,H);
+    const rise=0.6, decay=2.0;
+    const pts=200;
+    // GSR (top half)
+    gsrCtx.strokeStyle='#5eead4'; gsrCtx.lineWidth=1.6; gsrCtx.beginPath();
+    for(let i=0;i<=pts;i++){
+      const tt = i/pts*3.2;
+      const resp = tt<0? 0 : gsrAmp*(1-Math.exp(-tt/rise))*Math.exp(-tt/decay);
+      const x = i/pts*W, y = H*0.28 - resp*38;
+      if(i===0) gsrCtx.moveTo(x,y); else gsrCtx.lineTo(x,y);
+    }
+    gsrCtx.stroke();
+    gsrCtx.fillStyle='#557d72'; gsrCtx.font='10px IBM Plex Mono'; gsrCtx.fillText('GSR (µS)',8,14);
+    // EMG (bottom half)
+    gsrCtx.strokeStyle='#a78bfa'; gsrCtx.beginPath();
+    for(let i=0;i<=pts;i++){
+      const tt=i/pts*3.2;
+      const env = tt<0.9? emgAmp*Math.exp(-Math.abs(tt-0.4)/0.5): emgAmp*Math.exp(-(tt-0.9)/0.6);
+      const v = tt<3.2? env*Math.sin(tt*70)*rand(0.7,1) : 0;
+      const x=i/pts*W, y=H*0.75 - v*22;
+      if(i===0) gsrCtx.moveTo(x,y); else gsrCtx.lineTo(x,y);
+    }
+    gsrCtx.stroke();
+    gsrCtx.fillText('EMG (corrugator)',8, H*0.55+6);
+  }
+  drawGsrEmg(0,0,0);
+
+  /* ---- EKG ---- */
+  const bpmSlider = wrap.querySelector('#m6-bpm');
+  const hrvSlider = wrap.querySelector('#m6-hrv');
+  bpmSlider.addEventListener('input', ()=> wrap.querySelector('#m6-val-bpm').textContent = bpmSlider.value+' BPM');
+  hrvSlider.addEventListener('input', ()=> wrap.querySelector('#m6-val-hrv').textContent = hrvSlider.value+'%');
+  const ekgCanvas = wrap.querySelector('#m6-ekg-canvas');
+  const ekgCtx = setupCanvas(ekgCanvas);
+  const ekgReadout = wrap.querySelector('#m6-ekg-readout');
+  let ekgPhase=0, ekgLastBeatDur=60/72, ekgBuf=[];
+
+  function ecgShape(phase){
+    // phase in [0,1)
+    let v=0;
+    v += 0.15*gauss(phase,0.16,0.02);        // P
+    v += -0.25*gauss(phase,0.28,0.008);       // Q
+    v += 1.0*gauss(phase,0.30,0.012);         // R
+    v += -0.35*gauss(phase,0.32,0.010);       // S
+    v += 0.28*gauss(phase,0.55,0.045);        // T
+    return v;
+  }
+  function stepEkg(dt){
+    const bpm = Number(bpmSlider.value);
+    const hrv = Number(hrvSlider.value)/100;
+    const beatDur = (60/bpm)*(1+rand(-hrv,hrv));
+    ekgPhase += dt/beatDur;
+    if(ekgPhase>=1){ ekgPhase-=1; ekgLastBeatDur=beatDur; }
+    ekgBuf.push(ecgShape(ekgPhase));
+    if(ekgBuf.length>500) ekgBuf.shift();
+  }
+  function drawEkg(){
+    const W=ekgCanvas.width,H=ekgCanvas.height;
+    ekgCtx.clearRect(0,0,W,H);
+    ekgCtx.strokeStyle='#7ee08a'; ekgCtx.lineWidth=1.6; ekgCtx.beginPath();
+    ekgBuf.forEach((v,i)=>{
+      const x=i/500*W, y=H*0.6 - v*70;
+      if(i===0) ekgCtx.moveTo(x,y); else ekgCtx.lineTo(x,y);
+    });
+    ekgCtx.stroke();
+    const rr = Math.round(ekgLastBeatDur*1000);
+    ekgReadout.innerHTML = `Odstęp RR: <b>${rr} ms</b> &nbsp;·&nbsp; chwilowe tętno: <b>${Math.round(60000/rr)} BPM</b>`;
+  }
+
+  /* ---- Eyetracking ---- */
+  const eyeCanvas = wrap.querySelector('#m6-eye-canvas');
+  const eyeCtx = setupCanvas(eyeCanvas);
+  const eyeReadout = wrap.querySelector('#m6-eye-readout');
+  const scanBtn = wrap.querySelector('#m6-eye-scan');
+  const heatBtn = wrap.querySelector('#m6-eye-heat');
+  let showScan=true, showHeat=false;
+  let fixations = [];
+  let pressStart=null, pressPos=null;
+
+  function drawStimulusBg(){
+    const W=eyeCanvas.width,H=eyeCanvas.height;
+    eyeCtx.fillStyle='#0c1a18'; eyeCtx.fillRect(0,0,W,H);
+    eyeCtx.strokeStyle='var(--border2)';
+    function region(x,y,w,h,label,fill){
+      eyeCtx.fillStyle=fill; eyeCtx.fillRect(x,y,w,h);
+      eyeCtx.strokeStyle='#2c4d46'; eyeCtx.strokeRect(x,y,w,h);
+      eyeCtx.fillStyle='#557d72'; eyeCtx.font='11px IBM Plex Sans'; eyeCtx.fillText(label, x+8, y+18);
+    }
+    region(10,10,W-20,44,'Nagłówek','#16241f');
+    region(10,64,W*0.55,180,'Zdjęcie','#132420');
+    region(W*0.55+16,64,W*0.45-26,180,'Tekst główny','#0f1b19');
+    region(10,254,W-20,50,'Reklama boczna','#16241f');
+  }
+  function redrawEye(){
+    drawStimulusBg();
+    if(showHeat){
+      eyeCtx.globalCompositeOperation='lighter';
+      fixations.forEach(f=>{
+        const r = clamp(Math.sqrt(f.duration)*2.2, 14, 60);
+        const grad = eyeCtx.createRadialGradient(f.x,f.y,0,f.x,f.y,r);
+        grad.addColorStop(0,'rgba(245,192,74,0.35)');
+        grad.addColorStop(1,'rgba(245,192,74,0)');
+        eyeCtx.fillStyle=grad;
+        eyeCtx.beginPath(); eyeCtx.arc(f.x,f.y,r,0,Math.PI*2); eyeCtx.fill();
+      });
+      eyeCtx.globalCompositeOperation='source-over';
+    }
+    if(showScan){
+      eyeCtx.strokeStyle='rgba(94,234,212,0.55)'; eyeCtx.lineWidth=1.3;
+      eyeCtx.beginPath();
+      fixations.forEach((f,i)=>{ if(i===0) eyeCtx.moveTo(f.x,f.y); else eyeCtx.lineTo(f.x,f.y); });
+      eyeCtx.stroke();
+      fixations.forEach((f,i)=>{
+        const r = clamp(Math.sqrt(f.duration)*1.4, 6, 22);
+        eyeCtx.fillStyle='rgba(94,234,212,0.22)';
+        eyeCtx.beginPath(); eyeCtx.arc(f.x,f.y,r,0,Math.PI*2); eyeCtx.fill();
+        eyeCtx.strokeStyle='#5eead4'; eyeCtx.stroke();
+        eyeCtx.fillStyle='#04231d'; eyeCtx.font='10px IBM Plex Mono';
+        eyeCtx.fillText(String(i+1), f.x-3, f.y+3);
+      });
+    }
+    const total = fixations.reduce((s,f)=>s+f.duration,0);
+    eyeReadout.innerHTML = `Liczba fiksacji: <b>${fixations.length}</b> &nbsp;·&nbsp; łączny czas: <b>${Math.round(total)} ms</b> &nbsp;·&nbsp; średni czas: <b>${fixations.length?Math.round(total/fixations.length):0} ms</b>`;
+  }
+  function eyePos(evt){
+    const rect = eyeCanvas.getBoundingClientRect();
+    const scaleX = eyeCanvas.width/rect.width, scaleY = eyeCanvas.height/rect.height;
+    const cx = (evt.touches? evt.touches[0].clientX: evt.clientX) - rect.left;
+    const cy = (evt.touches? evt.touches[0].clientY: evt.clientY) - rect.top;
+    return {x: cx*scaleX, y: cy*scaleY};
+  }
+  eyeCanvas.addEventListener('mousedown', e=>{ pressStart=performance.now(); pressPos=eyePos(e); });
+  eyeCanvas.addEventListener('mouseup', e=>{
+    if(pressStart===null) return;
+    const dur = performance.now()-pressStart;
+    pressStart=null;
+    if(dur<80) return;
+    fixations.push({x:pressPos.x, y:pressPos.y, duration:dur});
+    redrawEye();
+  });
+  scanBtn.addEventListener('click', ()=>{ showScan=!showScan; scanBtn.classList.toggle('is-on', showScan); redrawEye(); });
+  heatBtn.addEventListener('click', ()=>{ showHeat=!showHeat; heatBtn.classList.toggle('is-on', showHeat); redrawEye(); });
+  wrap.querySelector('#m6-eye-clear').addEventListener('click', ()=>{ fixations=[]; redrawEye(); });
+  redrawEye();
+
+  App.m6 = { render: function(){
+    stepEkg(1/60);
+    drawEkg();
+  }};
+})();
+
+/* ---------------------------------------------------------------------
+   Reset globalny
+--------------------------------------------------------------------- */
+document.getElementById('btn-global-reset').addEventListener('click', ()=>{
+  if(confirm('Zresetować całą sesję (wszystkie moduły) do stanu początkowego?')) location.reload();
+});
+
+})();
+</script>
+</body>
+</html>
