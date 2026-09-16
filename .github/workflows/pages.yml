@@ -1,0 +1,64 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static site
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          cp simulator/main.html _site/index.html
+          cp simulator/light-theme.css _site/light-theme.css
+          touch _site/.nojekyll
+          python - <<'PY'
+          from pathlib import Path
+
+          page = Path('_site/index.html')
+          html = page.read_text(encoding='utf-8')
+          marker = '</head>'
+          injection = '  <link rel="stylesheet" href="./light-theme.css">\n'
+          if injection.strip() not in html:
+              if marker not in html:
+                  raise SystemExit('Missing </head> in simulator/main.html')
+              html = html.replace(marker, injection + marker, 1)
+          page.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
