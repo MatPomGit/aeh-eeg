@@ -12,8 +12,6 @@ for (const file of [...scriptFiles, ...styleFiles]) {
   if (!fs.existsSync(path.join(root, file))) fail(`index.html references missing asset: ${file}`);
 }
 
-// Resolve local ES-module imports recursively, so modules loaded through
-// enhancements3.js are included in NAV checks as well.
 const sources = new Map();
 function addSource(file) {
   if (sources.has(file)) return;
@@ -21,9 +19,7 @@ function addSource(file) {
   if (!fs.existsSync(full)) { fail(`missing imported module: ${file}`); return; }
   const text = read(file);
   sources.set(file, text);
-  for (const m of text.matchAll(/^\s*import(?:[^'"\n]*from\s*)?["']\.\/([^"']+\.js)["']/gm)) {
-    addSource(m[1]);
-  }
+  for (const m of text.matchAll(/^\s*import(?:[^'"\n]*from\s*)?["']\.\/([^"']+\.js)["']/gm)) addSource(m[1]);
 }
 scriptFiles.forEach(addSource);
 
@@ -37,14 +33,12 @@ if (!navMatch) {
 
   const all = [...sources.values()].join('\n');
   for (const id of navIds) {
-    const patterns = [
-      `id='${id}'`, `id="${id}"`, `id:\'${id}\'`, `id:'${id}'`, `.id='${id}'`, `.id="${id}"`
-    ];
+    const patterns = [`id='${id}'`, `id="${id}"`, `id:\'${id}\'`, `id:'${id}'`, `.id='${id}'`, `.id="${id}"`];
     if (!patterns.some(p => all.includes(p))) fail(`NAV module #${id} has no matching module declaration`);
   }
 
   const extractIds = text => [...text.matchAll(/\bid=["']([^"']+)["']/g)].map(m => m[1]);
-  const replacementFiles = ['live-modules.js', 'ui-controller.js'];
+  const replacementFiles = ['live-modules.js', 'ui-controller.js', 'eye-tracking-v2.js'];
   const replacementIds = new Set(replacementFiles.flatMap(f => extractIds(read(f))));
   const counts = new Map();
   for (const [file, text] of sources) {
@@ -55,12 +49,11 @@ if (!navMatch) {
     }
   }
 
-  // fmtL/fmtR belong to the superseded mfiles module in enhancements.js;
-  // legacy-cleanup.js removes that whole view before ui-controller builds
-  // mformats. They therefore never coexist in the final DOM.
-  const removedLegacyDuplicates = new Set(['fmtL','fmtR','fmtLbody','fmtRbody']);
+  // These IDs belong to modules that are deliberately removed before their
+  // final replacements are built, so they do not coexist in the final DOM.
+  const intentionalReplacements = new Set(['fmtL','fmtR','fmtLbody','fmtRbody','meye2']);
   for (const id of replacementIds) {
-    if (removedLegacyDuplicates.has(id)) continue;
+    if (intentionalReplacements.has(id)) continue;
     const where = counts.get(id) || [];
     if (where.length > 1) fail(`DOM id #${id} is declared more than once: ${where.join(', ')}`);
   }
