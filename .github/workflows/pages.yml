@@ -29,7 +29,6 @@ jobs:
           node --input-type=module --check < simulator/app.js
           node --input-type=module --check < simulator/enhancements.js
           node --input-type=module --check < simulator/enhancements2.js
-          node --input-type=module --check < simulator/enhancements3.js
           node --input-type=module --check < simulator/legacy-cleanup.js
           node --input-type=module --check < simulator/clinical-learning.js
           node --input-type=module --check < simulator/clinical-compare-v2.js
@@ -38,15 +37,10 @@ jobs:
           node --input-type=module --check < simulator/flashcards.js
           node --input-type=module --check < simulator/live-modules.js
           node --input-type=module --check < simulator/eye-tracking-v2.js
-          node --input-type=module --check < simulator/eye-layout-fixes.js
           node --input-type=module --check < simulator/ui-controller.js
           node --input-type=module --check < simulator/pedagogy-fixes.js
           node --input-type=module --check < simulator/source-model-v2.js
-          node --input-type=module --check < simulator/runtime-fixes-v2.js
-          node --input-type=module --check < simulator/layout-fixes-v3.js
-          node --input-type=module --check < simulator/structure-v4.js
-          node --input-type=module --check < simulator/post-ica-v5.js
-          node --input-type=module --check < simulator/interface-v6.js
+          node --input-type=module --check < simulator/interface.js
           node --check simulator/smoke-check.mjs
 
       - name: Run static smoke checks
@@ -72,18 +66,12 @@ jobs:
           cp simulator/enhancements3.css _site/enhancements3.css
           cp simulator/eye-tracking-v2.css _site/eye-tracking-v2.css
           cp simulator/source-model-v2.css _site/source-model-v2.css
-          cp simulator/runtime-fixes-v2.css _site/runtime-fixes-v2.css
           cp simulator/theme-dark.css _site/theme-dark.css
-          cp simulator/compact-layout-fixes.css _site/compact-layout-fixes.css
-          cp simulator/layout-fixes-v3.css _site/layout-fixes-v3.css
-          cp simulator/structure-v4.css _site/structure-v4.css
-          cp simulator/post-ica-v5.css _site/post-ica-v5.css
           cp simulator/laboratories.css _site/laboratories.css
-          cp simulator/interface-v6.css _site/interface-v6.css
+          cp simulator/interface.css _site/interface.css
           cp simulator/app.js _site/app.js
           cp simulator/enhancements.js _site/enhancements.js
           cp simulator/enhancements2.js _site/enhancements2.js
-          cp simulator/enhancements3.js _site/enhancements3.js
           cp simulator/legacy-cleanup.js _site/legacy-cleanup.js
           cp simulator/clinical-learning.js _site/clinical-learning.js
           cp simulator/clinical-compare-v2.js _site/clinical-compare-v2.js
@@ -92,15 +80,10 @@ jobs:
           cp simulator/flashcards.js _site/flashcards.js
           cp simulator/live-modules.js _site/live-modules.js
           cp simulator/eye-tracking-v2.js _site/eye-tracking-v2.js
-          cp simulator/eye-layout-fixes.js _site/eye-layout-fixes.js
           cp simulator/ui-controller.js _site/ui-controller.js
           cp simulator/pedagogy-fixes.js _site/pedagogy-fixes.js
           cp simulator/source-model-v2.js _site/source-model-v2.js
-          cp simulator/runtime-fixes-v2.js _site/runtime-fixes-v2.js
-          cp simulator/layout-fixes-v3.js _site/layout-fixes-v3.js
-          cp simulator/structure-v4.js _site/structure-v4.js
-          cp simulator/post-ica-v5.js _site/post-ica-v5.js
-          cp simulator/interface-v6.js _site/interface-v6.js
+          cp simulator/interface.js _site/interface.js
           cp simulator/signal.js _site/signal.js
           cp laboratories/*.pdf _site/laboratories/
           touch _site/.nojekyll
