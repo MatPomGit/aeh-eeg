@@ -47,7 +47,7 @@ async function runExperiment(m){
   if(token!==odd.runToken)break;
   const target=Math.random()<p;if(target)targets++;
   addEvent(target,i+1);
-  const response=Math.random()<(target?.91:.06),rt=response?Math.round(rand(280,680)):null;if(target&&response){correct++;rts.push(rt)}if(!target&&response)falseAlarms++;
+  const response=Math.random()<(target ? .91 : .06),rt=response?Math.round(rand(280,680)):null;if(target&&response){correct++;rts.push(rt)}if(!target&&response)falseAlarms++;
   const onset=performance.now()-started;appendRow(tbody,{i:i+1,time:(onset/1000).toFixed(3)+' s',target,rt,response:response?'SPACE':'—'});
   stim.innerHTML=`<div class="oddball-stim ${target?'target':'standard'}">${target?'●':'○'}</div><div class="oddball-live-label">${target?'BODZIEC DOCELOWY · S2':'BODZIEC STANDARDOWY · S1'}</div>`;
   const shown=Math.min(360,Math.max(190,isi*.30));await wait(shown);if(token!==odd.runToken)break;
