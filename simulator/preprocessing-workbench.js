@@ -16,15 +16,18 @@ function generateData(){
  const r=rng(seed),n=FS*DURATION,data=Object.fromEntries(CHANNELS.map(ch=>[ch,new Array(n)])),ocular=new Array(n),muscle=new Array(n);
  const alpha={Fp1:3,Fz:4,Cz:6,Pz:10,O1:15},theta={Fp1:6,Fz:7,Cz:5,Pz:4,O1:3},beta={Fp1:5,Fz:5,Cz:6,Pz:4,O1:3},eog={Fp1:1,Fz:.55,Cz:.18,Pz:.07,O1:.03},emg={Fp1:.65,Fz:.55,Cz:.35,Pz:.16,O1:.08};
  const phase=Object.fromEntries(CHANNELS.map(ch=>[ch,r()*Math.PI*2]));
+ const linePhase=Object.fromEntries(CHANNELS.map(ch=>[ch,r()*.75]));
+ const lineGain=Object.fromEntries(CHANNELS.map(ch=>[ch,.7+r()*.65]));
  for(let i=0;i<n;i++){
   const t=i/FS;
   ocular[i]=90*gauss(t,2.2,.075)+72*gauss(t,6.35,.09);
   muscle[i]=(gauss(t,4.75,.32)+.8*gauss(t,8.2,.22))*(14*Math.sin(2*Math.PI*36*t)+9*Math.sin(2*Math.PI*72*t));
   for(const ch of CHANNELS){
-   const drift=10*Math.sin(2*Math.PI*.22*t+phase[ch]*.3);
-   const line=6.5*Math.sin(2*Math.PI*50*t+.25);
+   const drift=16*Math.sin(2*Math.PI*.22*t+phase[ch]*.3)+5*Math.sin(2*Math.PI*.07*t+phase[ch]);
+   const line=8.5*lineGain[ch]*Math.sin(2*Math.PI*50*t+linePhase[ch]);
+   const fast=7*Math.sin(2*Math.PI*68*t+phase[ch]*1.8)+4*Math.sin(2*Math.PI*92*t+phase[ch]*.4);
    const brain=alpha[ch]*Math.sin(2*Math.PI*10*t+phase[ch])+theta[ch]*Math.sin(2*Math.PI*6*t+phase[ch]*.7)+beta[ch]*Math.sin(2*Math.PI*20*t+phase[ch]*1.3);
-   let v=brain+drift+line+ocular[i]*eog[ch]+muscle[i]*emg[ch]+normal(r)*4.2;
+   let v=brain+drift+line+fast+ocular[i]*eog[ch]+muscle[i]*emg[ch]+normal(r)*4.2;
    if(ch==='Cz'&&t>7.05&&t<7.85)v+=normal(r)*34+18*Math.sin(2*Math.PI*27*t);
    data[ch][i]=v;
   }
@@ -133,6 +136,7 @@ function bind(m){
 }
 
 function render(m){
+ if(!m||!dataset)return;
  const raw=dataset.data[state.channel],procAll=processData(),proc=procAll[state.channel],eps=epochs(procAll,state.channel),accepted=eps.filter(e=>e.accepted);
  drawSignal($('#prepSignal',m),raw,proc);
  drawSpectrum($('#prepSpectrum',m),raw,proc);
@@ -172,9 +176,9 @@ function renderSummary(m,raw,proc,ok,total){
 
 function axes(ctx,w,h){const c=colors();ctx.clearRect(0,0,w,h);ctx.fillStyle=c.well;ctx.fillRect(0,0,w,h);ctx.strokeStyle=c.line;ctx.lineWidth=1;for(let i=1;i<5;i++){const y=20+i*(h-55)/5;ctx.beginPath();ctx.moveTo(48,y);ctx.lineTo(w-16,y);ctx.stroke()}return{left:48,right:w-16,top:20,bottom:h-35}}
 function drawSignal(cv,raw,proc){
- const ctx=cv.getContext('2d'),c=colors(),a=axes(ctx,cv.width,cv.height),mid1=a.top+(a.bottom-a.top)*.27,mid2=a.top+(a.bottom-a.top)*.73,scale=(a.bottom-a.top)*.19/100;
+ const ctx=cv.getContext('2d'),c=colors(),a=axes(ctx,cv.width,cv.height),mid1=a.top+(a.bottom-a.top)*.27,mid2=a.top+(a.bottom-a.top)*.73,maxAbs=Math.max(35,peakAbs(raw),peakAbs(proc)),scale=(a.bottom-a.top)*.19/maxAbs;
  for(const t of EVENTS){const x=a.left+t/DURATION*(a.right-a.left);ctx.strokeStyle=c.warn;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(x,a.top);ctx.lineTo(x,a.bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=c.warn;ctx.font='10px IBM Plex Mono';ctx.fillText('S',x+3,a.top+10)}
- const draw=(arr,mid,color)=>{ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.beginPath();for(let i=0;i<arr.length;i+=2){const x=a.left+i/(arr.length-1)*(a.right-a.left),v=Math.max(-120,Math.min(120,arr[i])),y=mid-v*scale;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()};
+ const draw=(arr,mid,color)=>{ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.beginPath();for(let i=0;i<arr.length;i+=2){const x=a.left+i/(arr.length-1)*(a.right-a.left),v=Math.max(-maxAbs,Math.min(maxAbs,arr[i])),y=mid-v*scale;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()};
  draw(raw,mid1,c.muted);draw(proc,mid2,c.accent);ctx.fillStyle=c.text;ctx.font='700 11px IBM Plex Mono';ctx.fillText('SUROWY',8,mid1+4);ctx.fillText('PO',18,mid2+4);ctx.fillStyle=c.muted;ctx.font='10px IBM Plex Mono';for(let s=0;s<=DURATION;s+=2){const x=a.left+s/DURATION*(a.right-a.left);ctx.fillText(s+' s',x-7,cv.height-12)}
 }
 function drawSpectrum(cv,raw,proc){
@@ -184,3 +188,5 @@ function drawSpectrum(cv,raw,proc){
 }
 
 window.addEventListener('load',()=>setTimeout(build,700),{once:true});
+window.addEventListener('eeg:theme',()=>{const m=$('#m5');if(m)requestAnimationFrame(()=>render(m))});
+window.addEventListener('eeg:module',e=>{if(e.detail==='m5'){const m=$('#m5');if(m)requestAnimationFrame(()=>render(m))}});
