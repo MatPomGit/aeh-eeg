@@ -25,7 +25,7 @@ else{
  const ids=[...navMatch[1].matchAll(/\['([^']+)'/g)].map(m=>m[1]);
  if(new Set(ids).size!==ids.length)fail('NAV contains duplicate module IDs');
  const all=[...sources.values()].join('\n');
- for(const id of ids){const pats=[`id='${id}'`,`id="${id}"`,`.id='${id}'`,`.id="${id}"`];if(!pats.some(p=>all.includes(p)))fail(`NAV module #${id} has no declaration`)}
+ for(const id of ids){const pats=[`id='${id}'`,`id="${id}"`,`.id='${id}'`,`.id="${id}"`,`'${id}'`,`"${id}"`];if(!pats.some(p=>all.includes(p)))fail(`NAV module #${id} has no declaration or factory reference`)}
 }
 
 const iface=read('interface.js');
