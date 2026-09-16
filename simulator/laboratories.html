@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Instrukcje laboratoryjne do wirtualnego laboratorium EEG.">
+<title>EEG-Lab · Instrukcje laboratoryjne</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./app.css">
+<link rel="stylesheet" href="./theme-dark.css">
+<link rel="stylesheet" href="./laboratories.css">
+<script>document.documentElement.dataset.theme=localStorage.getItem('eeg-theme')||'light';</script>
+</head>
+<body class="labs-page">
+<main class="labs-shell">
+  <div class="labs-head">
+    <div>
+      <div class="eyebrow">EEG-LAB</div>
+      <h1>Instrukcje laboratoryjne</h1>
+      <p>Wybierz instrukcję. Dokument PDF otworzy się w nowej karcie.</p>
+    </div>
+    <a class="theme-toggle labs-back" href="./index.html">← Symulator</a>
+  </div>
+  <section class="labs-grid" aria-label="Instrukcje laboratoryjne">
+    <a class="lab-card" href="./laboratories/lab1_wprowadzenie.pdf" target="_blank" rel="noopener noreferrer"><span>01</span><div><b>Wprowadzenie</b><small>Podstawy pracy z EEG i organizacja ćwiczeń.</small></div></a>
+    <a class="lab-card" href="./laboratories/lab2_sprzet_procedura.pdf" target="_blank" rel="noopener noreferrer"><span>02</span><div><b>Sprzęt i procedura pomiarowa</b><small>Aparatura, przygotowanie stanowiska i uczestnika.</small></div></a>
+    <a class="lab-card" href="./laboratories/lab3_projektowanie_rejestracja.pdf" target="_blank" rel="noopener noreferrer"><span>03</span><div><b>Projektowanie eksperymentu i rejestracja</b><small>Zdarzenia, markery i poprawna organizacja pomiaru.</small></div></a>
+    <a class="lab-card" href="./laboratories/lab4_erp_czestotliwosc.pdf" target="_blank" rel="noopener noreferrer"><span>04</span><div><b>ERP i analiza częstotliwościowa</b><small>Potencjały wywołane oraz analiza widmowa.</small></div></a>
+    <a class="lab-card" href="./laboratories/lab5_pipeline_analizy.pdf" target="_blank" rel="noopener noreferrer"><span>05</span><div><b>Procedura analizy danych EEG</b><small>Od kontroli jakości i przetwarzania wstępnego do wyników.</small></div></a>
+    <a class="lab-card" href="./laboratories/lab6_inne_metody.pdf" target="_blank" rel="noopener noreferrer"><span>06</span><div><b>Inne metody psychofizjologiczne</b><small>Metody uzupełniające pomiar aktywności EEG.</small></div></a>
+  </section>
+</main>
+</body>
+</html>
