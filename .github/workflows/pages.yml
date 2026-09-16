@@ -27,6 +27,7 @@ jobs:
           set -euo pipefail
           node --input-type=module --check < simulator/signal.js
           node --input-type=module --check < simulator/app.js
+          node --input-type=module --check < simulator/enhancements.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -39,7 +40,9 @@ jobs:
           mkdir -p _site
           cp simulator/index.html _site/index.html
           cp simulator/app.css _site/app.css
+          cp simulator/enhancements.css _site/enhancements.css
           cp simulator/app.js _site/app.js
+          cp simulator/enhancements.js _site/enhancements.js
           cp simulator/signal.js _site/signal.js
           touch _site/.nojekyll
 
