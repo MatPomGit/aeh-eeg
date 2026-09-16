@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -21,15 +21,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate JavaScript modules
+      - name: Validate JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
-          for file in \
-            signal.js experiment-processing.js signal-analysis.js signal-live.js montage.js ica.js storage.js \
-            clinical.js qeeg-workflow.js qeeg-heatmap-v2.js quiz.js live-modules.js \
-            eye-tracking-v2.js teaching-content.js source-model-v2.js theme.js interface.js; do
-            node --input-type=module --check < "simulator/$file"
+          for file in simulator/*.js; do
+            node --input-type=module --check < "$file"
           done
           node --check simulator/smoke-check.mjs
 
@@ -48,12 +45,19 @@ jobs:
           set -euo pipefail
           rm -rf _site
           mkdir -p _site/laboratories
-          cp simulator/index.html _site/index.html
-          cp simulator/laboratories.html _site/laboratories.html
-          cp simulator/{app.css,modules.css,eye-tracking-v2.css,source-model-v2.css,theme-dark.css,laboratories.css,interface.css} _site/
-          cp simulator/{signal.js,experiment-processing.js,signal-analysis.js,signal-live.js,montage.js,ica.js,storage.js,clinical.js,qeeg-workflow.js,qeeg-heatmap-v2.js,quiz.js,live-modules.js,eye-tracking-v2.js,teaching-content.js,source-model-v2.js,theme.js,interface.js} _site/
-          cp laboratories/*.pdf _site/laboratories/
+          find simulator -maxdepth 1 -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \) -exec cp {} _site/ \;
+          find laboratories -maxdepth 1 -type f -name '*.pdf' -exec cp {} _site/laboratories/ \;
           touch _site/.nojekyll
+
+      - name: Verify built site
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f _site/index.html
+          test -f _site/interface.js
+          test -f _site/signal.js
+          test -f _site/laboratories.html
+          test -n "$(find _site/laboratories -maxdepth 1 -type f -name '*.pdf' -print -quit)"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
