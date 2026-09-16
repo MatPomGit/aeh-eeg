@@ -77,7 +77,7 @@ function build(){
  const old=$('#m5');if(old)old.remove();
  dataset=generateData();
  const m=document.createElement('section');m.id='m5';m.className='module preprocessing-workbench';
- m.innerHTML=`<div class="head"><div><div class="eyebrow">PRZETWARZANIE WSTĘPNE</div><h1>Przetwarzanie wstępne EEG</h1><p>Przejdź przez rzeczywisty pipeline preprocessingu. Każda zmiana parametru przelicza ten sam wielokanałowy sygnał i aktualizuje przebieg, widmo, metryki oraz kwalifikację epok.</p></div></div>
+ m.innerHTML=`<div class="head"><div><div class="eyebrow">PRZETWARZANIE WSTĘPNE</div><h1>Przetwarzanie wstępne EEG</h1><p><b>Cel:</b> przygotować surowy zapis EEG do analizy, ograniczając artefakty bez usuwania użytecznej aktywności. Przechodź kolejno przez kontrolę kanałów, filtrację, referencję, segmentację, kontrolę jakości epok, ICA i korekcję linii podstawowej. Każda zmiana parametru przelicza ten sam wielokanałowy sygnał i aktualizuje przebieg, widmo, metryki oraz kwalifikację epok.</p></div></div>
  <div class="prep-pipeline" id="prepPipeline">
   <button data-prep-focus="prepInspect"><b>1</b><span>Kontrola danych<small>kanał i interpolacja</small></span></button>
   <button data-prep-focus="prepFilters"><b>2</b><span>Filtry<small>notch + pasmowy</small></span></button>
@@ -95,8 +95,8 @@ function build(){
    </section>
    <section class="panel" id="prepFilters"><h2><span class="dot"></span>2. Filtry</h2>
     <label class="prep-check"><input id="prepNotch" type="checkbox" checked><span><b>Notch 50 Hz</b><small>Filtr IIR biquad, Q = 28.</small></span></label>
-    <div class="field"><label>High-pass <output id="prepHpOut">0,5 Hz</output></label><input id="prepHp" type="range" min="0" max="5" step="0.1" value="0.5"></div>
-    <div class="field"><label>Low-pass <output id="prepLpOut">40 Hz</output></label><input id="prepLp" type="range" min="10" max="100" step="1" value="40"></div>
+    <div class="field"><label>High-pass filter (filtr górnoprzepustowy) <output id="prepHpOut">0,5 Hz</output></label><input id="prepHp" type="range" min="0" max="5" step="0.1" value="0.5"></div>
+    <div class="field"><label>Low-pass filter (filtr dolnoprzepustowy) <output id="prepLpOut">40 Hz</output></label><input id="prepLp" type="range" min="10" max="100" step="1" value="40"></div>
     <div class="prep-warning" id="prepFilterWarning"></div>
    </section>
    <section class="panel" id="prepReference"><h2><span class="dot"></span>3. Referencja</h2>
