@@ -11,13 +11,16 @@ for(const f of [...scripts,...styles])if(!fs.existsSync(path.join(root,f)))fail(
 if(new Set(scripts).size!==scripts.length)fail('duplicate script reference in index.html');
 if(new Set(styles).size!==styles.length)fail('duplicate stylesheet reference in index.html');
 
-const retired=['app.js','enhancements.js','enhancements2.js','enhancements3.js','legacy-cleanup.js','ui-controller.js','physiology-eye.js','pedagogy-fixes.js','flashcards.js','clinical-learning.js','clinical-compare-v2.js','runtime-fixes-v2.js','layout-fixes-v3.js','structure-v4.js','post-ica-v5.js','interface-v6.js','eye-layout-fixes.js','enhancements.css','enhancements2.css','enhancements3.css','light-theme.css','main.html'];
+const retired=[
+ 'app.js','enhancements.js','enhancements2.js','enhancements3.js','legacy-cleanup.js','ui-controller.js','physiology-eye.js','pedagogy-fixes.js','flashcards.js','clinical-learning.js','clinical-compare-v2.js','runtime-fixes-v2.js','layout-fixes-v3.js','structure-v4.js','post-ica-v5.js','interface-v6.js','eye-layout-fixes.js','enhancements.css','enhancements2.css','enhancements3.css','light-theme.css','main.html',
+ 'eye-tracking-v2.js','eye-tracking-v2.css','source-model-v2.js','source-model-v2.css','qeeg-heatmap-v2.js'
+];
 for(const f of retired){if(index.includes(f))fail(`retired asset loaded again: ${f}`);if(fs.existsSync(path.join(root,f)))fail(`retired asset still exists: ${f}`)}
 
-const required=['experiment-processing.js','signal-analysis.js','signal-live.js','montage.js','ica.js','storage.js','clinical.js','qeeg-workflow.js','qeeg-heatmap-v2.js','quiz.js','live-modules.js','eye-tracking-v2.js','teaching-content.js','source-model-v2.js','theme.js','interface.js'];
+const required=['experiment-processing.js','signal-analysis.js','signal-live.js','montage.js','ica.js','storage.js','clinical.js','qeeg-workflow.js','qeeg-heatmap.js','quiz.js','live-modules.js','eye-tracking.js','teaching-content.js','source-model.js','theme.js','interface.js'];
 for(const f of required)if(!scripts.includes(f))fail(`required module is not loaded: ${f}`);
 
-const declarations=[['experiment-processing.js',['m3','m5']],['signal-analysis.js',['m1x','mfft','mpostx']],['montage.js',['m2x']],['ica.js',['mica']],['storage.js',['mformats','mbids']],['clinical.js',['mlobes','mclinical']],['qeeg-workflow.js',['mqeeg']],['qeeg-heatmap-v2.js',['mheat']],['quiz.js',['mquiz']],['live-modules.js',['msimlive2','mphys2','meye2']],['source-model-v2.js',['m7']]];
+const declarations=[['experiment-processing.js',['m3','m5']],['signal-analysis.js',['m1x','mfft','mpostx']],['montage.js',['m2x']],['ica.js',['mica']],['storage.js',['mformats','mbids']],['clinical.js',['mlobes','mclinical']],['qeeg-workflow.js',['mqeeg']],['qeeg-heatmap.js',['mheat']],['quiz.js',['mquiz']],['live-modules.js',['msimlive2','mphys2','meye2']],['source-model.js',['m7']]];
 for(const[file,ids]of declarations){const text=read(file);for(const id of ids)if(!text.includes(`id='${id}'`)&&!text.includes(`id="${id}"`))fail(`${file} does not declare #${id}`)}
 
 const iface=read('interface.js');
@@ -28,5 +31,8 @@ if(/const\s+NAV\s*=/.test(read('signal-live.js')))fail('signal-live.js must not 
 if(/nav\.innerHTML/.test(read('signal-live.js')))fail('signal-live.js modifies navigation');
 if(!read('signal-live.js').includes("active==='m1x'"))fail('live EEG renderer does not handle m1x');
 if(!read('storage.js').includes("id='mformats'")||!read('storage.js').includes("id='mbids'"))fail('storage module is incomplete');
+
+const versioned=fs.readdirSync(root).filter(f=>/-v\d+\.(?:js|css)$/.test(f));
+if(versioned.length)fail(`historical version suffixes remain: ${versioned.join(', ')}`);
 
 if(!process.exitCode)console.log('Static smoke checks passed.');
