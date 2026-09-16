@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Interaktywne wirtualne laboratorium EEG: montaż 10–20, QC, oddball, ERP, PSD, preprocessing, ICA i lokalizacja źródeł.">
+<title>EEG-Lab · Wirtualne laboratorium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./app.css">
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand">EEG-Lab <small>WIRTUALNE LABORATORIUM PSYCHOFIZJOLOGII</small></div>
+  <div class="statusbar">
+    <span class="pill warn" id="hdr-qc">QC: wymaga uwagi</span>
+    <span class="pill" id="hdr-montage">Elektrody 0/19</span>
+    <span class="pill" id="hdr-data">Dane: brak</span>
+    <span class="pill" id="hdr-progress">Zadania 0/8</span>
+  </div>
+</header>
+<nav class="nav" id="nav" aria-label="Moduły laboratorium"></nav>
+<main class="main" id="main"></main>
+</div>
+<noscript>Ta aplikacja wymaga włączonego JavaScript.</noscript>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
