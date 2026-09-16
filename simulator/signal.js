@@ -22,6 +22,9 @@ export class EEGEngine{
  setFs(v){this.fs=Number(v)}
  setBand(name,value){if(name in this.bands)this.bands[name]=clamp(Number(value),0,100)}
  artifact(type){const now=performance.now()/1000;this.artifacts=this.artifacts.filter(a=>now-a.t0<3);this.artifacts.push({type,t0:now})}
+ lineCoupling(e){let h=0;for(const ch of e.id)h=(h*31+ch.charCodeAt(0))%101;return .35+1.3*h/100}
+ lineRaw(e,t,amp=this.lineNoise){const p=this.phase.get(e.id),phase=.12*p[4];return amp*this.lineCoupling(e)*Math.sin(2*Math.PI*50*t+phase)}
+ lineReferenced(id,t,amp=this.lineNoise){const e=ELECTRODES.find(x=>x.id===id);if(!e)return 0;const v=this.lineRaw(e,t,amp);if(this.reference==='Cz'){const r=ELECTRODES.find(x=>x.id==='Cz');return v-this.lineRaw(r,t,amp)}if(this.reference==='mastoids'){const l=ELECTRODES.find(x=>x.id==='T7'),r=ELECTRODES.find(x=>x.id==='T8');return v-(this.lineRaw(l,t,amp)+this.lineRaw(r,t,amp))/2}const avg=mean(ELECTRODES.map(x=>this.lineRaw(x,t,amp)));return v-avg}
  sample(e,t){
   const p=this.phase.get(e.id),occ=e.region==='occipital'?1:0,par=e.region==='parietal'?1:0,front=e.region==='frontal'?1:0,temp=e.region==='temporal'?1:0;
   const b=this.bands,alphaEnv=(.65+.35*Math.sin(2*Math.PI*.18*t+p[0]))*(this.eyesClosed?(1+1.7*occ+.6*par):(.58+.18*occ));
@@ -31,8 +34,7 @@ export class EEGEngine{
   v+=(b.alpha/100)*23*alphaEnv*Math.sin(2*Math.PI*this.alphaPeak*t+p[2]);
   v+=(b.beta/100)*15*(1+.35*front)*Math.sin(2*Math.PI*19*t+p[3]);
   v+=(b.gamma/100)*7*(1+.35*temp)*Math.sin(2*Math.PI*38*t+p[4]);
-  const lineGain=.58+.52*((e.id.charCodeAt(0)+e.id.length)%7)/6,linePhase=.16*p[4];
-  v+=this.lineNoise*lineGain*Math.sin(2*Math.PI*50*t+linePhase)+this.pinkish(t,e.id)*this.noise;
+  v+=this.lineRaw(e,t)+this.pinkish(t,e.id)*this.noise;
   const now=performance.now()/1000;
   const xn=(e.x-100)/80,yn=(e.y-103)/70;
   const moveGain=.78+.34*xn-.22*yn+.12*Math.sin(p[0]);
