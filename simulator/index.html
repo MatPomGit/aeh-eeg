@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Interaktywne wirtualne laboratorium EEG: sygnał, FFT, montaż, eksperymenty, preprocessing, ICA, postprocessing, qEEG, multimodalność i zapis danych.">
 <title>EEG-Lab · Wirtualne laboratorium</title>
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,11 +20,12 @@
 <link rel="stylesheet" href="./theme-dark.css">
 <link rel="stylesheet" href="./laboratories.css">
 <link rel="stylesheet" href="./interface.css">
+<link rel="stylesheet" href="./signal-registration.css">
 </head>
 <body>
 <div class="app">
 <header class="top">
-  <div class="brand">EEG-Lab <small>WIRTUALNE LABORATORIUM PSYCHOFIZJOLOGII</small></div>
+  <div class="brand"><img class="brand-logo" src="./logo.svg" alt=""><span class="brand-copy">EEG-Lab <small>WIRTUALNE LABORATORIUM PSYCHOFIZJOLOGII</small></span></div>
   <div class="statusbar">
     <a class="theme-toggle lab-instructions-link" href="./laboratories.html" aria-label="Instrukcje laboratoryjne">Instrukcje</a>
   </div>
@@ -53,5 +55,6 @@
 <script type="module" src="./erp-averaging.js"></script>
 <script type="module" src="./lobe-guide.js"></script>
 <script type="module" src="./preprocessing-workbench.js"></script>
+<script type="module" src="./signal-registration.js"></script>
 </body>
 </html>
