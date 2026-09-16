@@ -35,6 +35,8 @@ jobs:
           node --input-type=module --check < simulator/qeeg-workflow.js
           node --input-type=module --check < simulator/qeeg-heatmap-v2.js
           node --input-type=module --check < simulator/flashcards.js
+          node --input-type=module --check < simulator/live-modules.js
+          node --input-type=module --check < simulator/ui-controller.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -50,6 +52,7 @@ jobs:
           cp simulator/enhancements.css _site/enhancements.css
           cp simulator/enhancements2.css _site/enhancements2.css
           cp simulator/enhancements3.css _site/enhancements3.css
+          cp simulator/theme-dark.css _site/theme-dark.css
           cp simulator/app.js _site/app.js
           cp simulator/enhancements.js _site/enhancements.js
           cp simulator/enhancements2.js _site/enhancements2.js
@@ -59,6 +62,8 @@ jobs:
           cp simulator/qeeg-workflow.js _site/qeeg-workflow.js
           cp simulator/qeeg-heatmap-v2.js _site/qeeg-heatmap-v2.js
           cp simulator/flashcards.js _site/flashcards.js
+          cp simulator/live-modules.js _site/live-modules.js
+          cp simulator/ui-controller.js _site/ui-controller.js
           cp simulator/signal.js _site/signal.js
           touch _site/.nojekyll
 
