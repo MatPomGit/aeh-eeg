@@ -7,6 +7,7 @@ const fail=msg=>{console.error(`SMOKE FAIL: ${msg}`);process.exitCode=1};
 const index=read('index.html');
 const scripts=[...index.matchAll(/<script[^>]+src=["']\.\/([^"']+)["']/g)].map(m=>m[1]);
 const styles=[...index.matchAll(/<link[^>]+href=["']\.\/([^"']+\.css)["']/g)].map(m=>m[1]);
+const refs=[...index.matchAll(/(?:src|href)=["']\.\/([^"']+)["']/g)].map(m=>m[1]);
 for(const f of [...scripts,...styles])if(!fs.existsSync(path.join(root,f)))fail(`missing asset referenced by index.html: ${f}`);
 if(new Set(scripts).size!==scripts.length)fail('duplicate script reference in index.html');
 if(new Set(styles).size!==styles.length)fail('duplicate stylesheet reference in index.html');
@@ -15,9 +16,9 @@ const retired=[
  'app.js','enhancements.js','enhancements2.js','enhancements3.js','legacy-cleanup.js','ui-controller.js','physiology-eye.js','pedagogy-fixes.js','flashcards.js','clinical-learning.js','clinical-compare-v2.js','runtime-fixes-v2.js','layout-fixes-v3.js','structure-v4.js','post-ica-v5.js','interface-v6.js','eye-layout-fixes.js','enhancements.css','enhancements2.css','enhancements3.css','light-theme.css','main.html',
  'eye-tracking-v2.js','eye-tracking-v2.css','source-model-v2.js','source-model-v2.css','qeeg-heatmap-v2.js'
 ];
-for(const f of retired){if(index.includes(f))fail(`retired asset loaded again: ${f}`);if(fs.existsSync(path.join(root,f)))fail(`retired asset still exists: ${f}`)}
+for(const f of retired){if(refs.includes(f))fail(`retired asset loaded again: ${f}`);if(fs.existsSync(path.join(root,f)))fail(`retired asset still exists: ${f}`)}
 
-const required=['experiment-processing.js','signal-analysis.js','signal-live.js','montage.js','ica.js','storage.js','clinical.js','qeeg-workflow.js','qeeg-heatmap.js','quiz.js','live-modules.js','eye-tracking.js','teaching-content.js','source-model.js','theme.js','interface.js'];
+const required=['experiment-processing.js','signal-analysis.js','signal-live.js','montage.js','ica.js','storage.js','clinical.js','qeeg-workflow.js','qeeg-heatmap.js','quiz.js','live-modules.js','eye-tracking.js','teaching-content.js','source-model.js','theme.js','interface.js','experiment-enhancements.js','erp-averaging.js'];
 for(const f of required)if(!scripts.includes(f))fail(`required module is not loaded: ${f}`);
 
 const declarations=[['experiment-processing.js',['m3','m5']],['signal-analysis.js',['m1x','mfft','mpostx']],['montage.js',['m2x']],['ica.js',['mica']],['storage.js',['mformats','mbids']],['clinical.js',['mlobes','mclinical']],['qeeg-workflow.js',['mqeeg']],['qeeg-heatmap.js',['mheat']],['quiz.js',['mquiz']],['live-modules.js',['msimlive2','mphys2','meye2']],['source-model.js',['m7']]];
