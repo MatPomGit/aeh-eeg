@@ -26,9 +26,9 @@ jobs:
         run: |
           set -euo pipefail
           for file in \
-            signal.js experiment-processing.js signal-analysis.js montage.js \
+            signal.js experiment-processing.js signal-analysis.js signal-live.js montage.js ica.js storage.js \
             clinical.js qeeg-workflow.js qeeg-heatmap-v2.js quiz.js live-modules.js \
-            eye-tracking-v2.js ui-controller.js teaching-content.js source-model-v2.js interface.js; do
+            eye-tracking-v2.js teaching-content.js source-model-v2.js theme.js interface.js; do
             node --input-type=module --check < "simulator/$file"
           done
           node --check simulator/smoke-check.mjs
@@ -51,7 +51,7 @@ jobs:
           cp simulator/index.html _site/index.html
           cp simulator/laboratories.html _site/laboratories.html
           cp simulator/{app.css,modules.css,eye-tracking-v2.css,source-model-v2.css,theme-dark.css,laboratories.css,interface.css} _site/
-          cp simulator/{signal.js,experiment-processing.js,signal-analysis.js,montage.js,clinical.js,qeeg-workflow.js,qeeg-heatmap-v2.js,quiz.js,live-modules.js,eye-tracking-v2.js,ui-controller.js,teaching-content.js,source-model-v2.js,interface.js} _site/
+          cp simulator/{signal.js,experiment-processing.js,signal-analysis.js,signal-live.js,montage.js,ica.js,storage.js,clinical.js,qeeg-workflow.js,qeeg-heatmap-v2.js,quiz.js,live-modules.js,eye-tracking-v2.js,teaching-content.js,source-model-v2.js,theme.js,interface.js} _site/
           cp laboratories/*.pdf _site/laboratories/
           touch _site/.nojekyll
 
