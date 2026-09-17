@@ -40,6 +40,9 @@ if(!read('oddball.js').includes("e.target?'S2':'S1'"))fail('Oddball EEG plot lac
 if(!read('oddball.js').includes('buildTrialSequence(n,p)'))fail('Oddball runtime does not build a controlled S1/S2 sequence');
 if(read('interface.js').includes('improveOddball'))fail('interface.js still owns a duplicate, unsynchronised Oddball runtime');
 if(!fs.existsSync(path.join(root,'oddball-model.test.mjs')))fail('Oddball response model tests are missing');
+if(!read('eye-tracking.js').includes('eyeGazeCursor'))fail('Eye Tracking lacks a live gaze cursor');
+if(!read('eye-tracking.js').includes('c.pointIndex===null'))fail('Eye Tracking does not commit an active stable fixation');
+if(!fs.existsSync(path.join(root,'eye-tracking-model.test.mjs')))fail('Eye Tracking calibration tests are missing');
 
 const storage=read('storage.js');
 if(!storage.includes("id='mformats'")||!storage.includes("id='mbids'"))fail('storage module is incomplete');
