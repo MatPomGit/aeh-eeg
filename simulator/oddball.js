@@ -1,3 +1,5 @@
+import{buildTrialSequence,evokedPotential}from'./oddball-model.js';
+
 const $=(s,r=document)=>r.querySelector(s);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const rand=(a,b)=>a+Math.random()*(b-a);
@@ -6,15 +8,12 @@ const odd={active:false,running:false,raf:0,last:0,acc:0,fs:250,duration:4,t:0,b
 
 function css(n,fallback){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||fallback}
 function initBuffer(){odd.buf=[];odd.events=[];odd.markers=[];odd.t=0;for(let i=0;i<odd.fs*odd.duration;i++)odd.buf.push(sample())}
-function g(x,mu,s,a){const z=(x-mu)/s;return a*Math.exp(-.5*z*z)}
 function sample(){
  odd.t+=1/odd.fs;
  let v=3.2*Math.sin(2*Math.PI*9.5*odd.t)+2*Math.sin(2*Math.PI*18*odd.t)+rand(-2.2,2.2);
  for(const e of odd.events){
   const d=odd.t-e.t;if(d<0||d>1.15)continue;
-  v+=g(d,.09,.022,-8)+g(d,.18,.035,6);
-  if(e.target)v+=g(d,.25,.045,-8)+g(d,.35,.065,26);
-  else v+=g(d,.30,.055,5);
+  v+=evokedPotential(d,e.target);
  }
  odd.events=odd.events.filter(e=>odd.t-e.t<1.2);
  return v;
@@ -29,6 +28,16 @@ function draw(){
  for(const e of odd.markers){const age=odd.t-e.t;if(age<0||age>odd.duration)continue;const x=right-age/odd.duration*(right-left);ctx.strokeStyle=e.target?danger:violet;ctx.globalAlpha=.55;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);ctx.stroke();ctx.globalAlpha=1;ctx.fillStyle=e.target?danger:violet;ctx.font='700 10px IBM Plex Mono';ctx.fillText(e.target?'S2':'S1',Math.min(x+3,right-16),top+11)}
  odd.markers=odd.markers.filter(e=>odd.t-e.t<odd.duration+.1);
  ctx.strokeStyle=accent;ctx.lineWidth=1.7;ctx.beginPath();odd.buf.forEach((v,i)=>{const x=left+i/Math.max(odd.buf.length-1,1)*(right-left),y=(top+bottom)/2-Math.max(-40,Math.min(40,v))/40*(bottom-top)*.45;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+ for(const e of odd.markers){
+  const startIndex=Math.max(0,Math.round(odd.buf.length-1-(odd.t-e.t)*odd.fs));
+  const endIndex=Math.min(odd.buf.length-1,startIndex+Math.round(.65*odd.fs));
+  if(endIndex<=0||startIndex>=odd.buf.length)continue;
+  ctx.strokeStyle=e.target?danger:violet;ctx.lineWidth=e.target?2.8:2.2;ctx.beginPath();
+  for(let i=startIndex;i<=endIndex;i++){const x=left+i/Math.max(odd.buf.length-1,1)*(right-left),v=odd.buf[i],y=(top+bottom)/2-Math.max(-40,Math.min(40,v))/40*(bottom-top)*.45;i===startIndex?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+  ctx.stroke();
+ }
+ const latest=odd.markers.at(-1),state=$('#oddballEegState');
+ if(state&&latest){const ms=Math.max(0,Math.round((odd.t-latest.t)*1000));state.innerHTML=latest.target?`<b>S2 · bodziec niezgodny/docelowy</b> — ${ms} ms po bodźcu; obserwuj N2 i wyraźną dodatnią P3 około 300–450 ms.`:`<b>S1 · bodziec standardowy</b> — ${ms} ms po bodźcu; widoczne są głównie wczesne komponenty sensoryczne.`}
 }
 function loop(now){
  if(!odd.active){odd.raf=0;return}
@@ -36,20 +45,20 @@ function loop(now){
 }
 function setActive(on){odd.active=on;if(on){odd.last=performance.now();odd.acc=0;if(!odd.buf.length)initBuffer();if(!odd.raf)odd.raf=requestAnimationFrame(loop)}else{if(odd.raf)cancelAnimationFrame(odd.raf);odd.raf=0;odd.last=0;odd.acc=0}}
 function addEvent(target,seq){const e={t:odd.t,target,seq};odd.events.push(e);odd.markers.push(e);return e}
-function appendRow(tbody,row){tbody.insertAdjacentHTML('beforeend',`<tr class="oddball-event-row ${row.target?'target':'standard'}"><td>${row.i}</td><td class="mono">${row.time}</td><td>${row.target?'docelowy':'standardowy'}</td><td class="mono"><b>${row.target?'S2':'S1'}</b></td><td>${row.rt??'—'}</td><td>${row.response}</td></tr>`);const wrap=tbody.closest('.tablewrap');if(wrap)wrap.scrollTop=wrap.scrollHeight}
+function appendRow(tbody,row){tbody.insertAdjacentHTML('beforeend',`<tr class="oddball-event-row ${row.target?'target':'standard'}"><td>${row.i}</td><td class="mono">${row.time}</td><td>${row.target?'niezgodny / docelowy':'standardowy'}</td><td class="mono"><b>${row.target?'S2':'S1'}</b></td><td>${row.rt??'—'}</td><td>${row.response}</td></tr>`);const wrap=tbody.closest('.tablewrap');if(wrap)wrap.scrollTop=wrap.scrollHeight}
 
 async function runExperiment(m){
  const run=$('#runexp',m);if(!run||run.disabled)return;
  const token=++odd.runToken;run.disabled=true;odd.running=true;
- const tbody=$('#events',m),stim=$('#stim',m),beh=$('#beh',m);tbody.innerHTML='';odd.events=[];odd.markers=[];beh.textContent='Eksperyment w toku…';setActive(true);
- const n=+$('#ntrials',m).value,p=+$('#ptarget',m).value/100,isi=+$('#isi',m).value,jit=+$('#jitter',m).value;let targets=0,correct=0,falseAlarms=0,rts=[];const started=performance.now();
- for(let i=0;i<n;i++){
+ const tbody=$('#events',m),stim=$('#stim',m),beh=$('#beh',m),state=$('#oddballEegState',m);tbody.innerHTML='';odd.events=[];odd.markers=[];beh.textContent='Eksperyment w toku…';if(state)state.textContent='Oczekiwanie na pierwszy bodziec…';setActive(true);
+ const n=+$('#ntrials',m).value,p=+$('#ptarget',m).value/100,isi=+$('#isi',m).value,jit=+$('#jitter',m).value,sequence=buildTrialSequence(n,p);let targets=0,correct=0,falseAlarms=0,rts=[];const started=performance.now();
+ for(let i=0;i<sequence.length;i++){
   if(token!==odd.runToken)break;
-  const target=Math.random()<p;if(target)targets++;
-  addEvent(target,i+1);
+  const target=sequence[i];if(target)targets++;
   const response=Math.random()<(target ? .91 : .06),rt=response?Math.round(rand(280,680)):null;if(target&&response){correct++;rts.push(rt)}if(!target&&response)falseAlarms++;
+  stim.innerHTML=`<div class="oddball-stim ${target?'target':'standard'}">${target?'●':'○'}</div><div class="oddball-live-label">${target?'BODZIEC NIEZGODNY / DOCELOWY · S2':'BODZIEC STANDARDOWY · S1'}</div>`;
+  addEvent(target,i+1);
   const onset=performance.now()-started;appendRow(tbody,{i:i+1,time:(onset/1000).toFixed(3)+' s',target,rt,response:response?'SPACE':'—'});
-  stim.innerHTML=`<div class="oddball-stim ${target?'target':'standard'}">${target?'●':'○'}</div><div class="oddball-live-label">${target?'BODZIEC DOCELOWY · S2':'BODZIEC STANDARDOWY · S1'}</div>`;
   const shown=Math.min(360,Math.max(190,isi*.30));await wait(shown);if(token!==odd.runToken)break;
   stim.innerHTML='<div class="oddball-fix">+</div><div class="oddball-live-label">przerwa między bodźcami</div>';
   await wait(Math.max(120,isi+rand(-jit,jit)-shown));
@@ -61,8 +70,9 @@ async function runExperiment(m){
 function enhance(){
  const m=$('#m3');if(!m||m.dataset.oddballRuntime)return;m.dataset.oddballRuntime='1';
  const params=$('#runexp',m)?.closest('.panel');if(!params)return;
+ const stim=$('#stim',m);stim?.classList.add('oddball-stage');if(stim)stim.innerHTML='<div class="oddball-fix">+</div><div class="oddball-live-label">oczekiwanie na bodziec</div>';
  let panel=$('.oddball-eeg-panel',m);if(!panel){panel=document.createElement('div');panel.className='panel oddball-eeg-panel';params.after(panel)}
- panel.innerHTML=`<h2><span class="dot"></span>Symulacja EEG</h2><canvas id="oddballEeg" width="900" height="250"></canvas><div class="readout">Pionowe znaczniki S1/S2 odpowiadają dokładnie zdarzeniom zapisanym w tabeli. S2 wywołuje wyraźniejszą odpowiedź N2/P3 około 250–400 ms po bodźcu.</div>`;
+ panel.innerHTML=`<h2><span class="dot"></span>EEG zsynchronizowany z bodźcem (Cz)</h2><canvas id="oddballEeg" width="900" height="250" aria-label="Ciągły sygnał EEG z odpowiedziami na bodźce S1 i S2"></canvas><div class="readout" id="oddballEegState">Uruchom eksperyment. Fragment odpowiedzi po S1 będzie zaznaczony fioletem, a po rzadkim S2 — czerwienią.</div><div class="readout">Znacznik pokazuje początek bodźca. S1 wywołuje głównie wczesną odpowiedź sensoryczną; S2 dodatkowo modelową N2/P3, z dodatnią P3 najlepiej widoczną około 300–450 ms po bodźcu.</div>`;
  if(!odd.buf.length)initBuffer();draw();
  $('#runexp',m).onclick=()=>runExperiment(m);
  if(m.classList.contains('active'))setActive(true);

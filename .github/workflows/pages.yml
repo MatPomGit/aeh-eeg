@@ -36,6 +36,9 @@ jobs:
           set -euo pipefail
           node simulator/smoke-check.mjs
 
+      - name: Test Oddball response model
+        run: node --test simulator/oddball-model.test.mjs
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

@@ -37,6 +37,9 @@ if(/nav\.innerHTML/.test(read('signal-live.js')))fail('signal-live.js modifies n
 if(!read('signal-live.js').includes("active==='m1x'"))fail('live EEG renderer does not handle m1x');
 if(!read('oddball.js').includes("appendRow(tbody"))fail('Oddball event markers are not rendered incrementally');
 if(!read('oddball.js').includes("e.target?'S2':'S1'"))fail('Oddball EEG plot lacks S1/S2 event markers');
+if(!read('oddball.js').includes('buildTrialSequence(n,p)'))fail('Oddball runtime does not build a controlled S1/S2 sequence');
+if(read('interface.js').includes('improveOddball'))fail('interface.js still owns a duplicate, unsynchronised Oddball runtime');
+if(!fs.existsSync(path.join(root,'oddball-model.test.mjs')))fail('Oddball response model tests are missing');
 
 const storage=read('storage.js');
 if(!storage.includes("id='mformats'")||!storage.includes("id='mbids'"))fail('storage module is incomplete');
