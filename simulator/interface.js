@@ -52,12 +52,6 @@ function addStroop(){
  $('#stroopStart',m).onclick=trial;$('#stroopReset',m).onclick=()=>{stats={n:0,ok:0,con:[],inc:[]};current=null;$('#stroopWord',m).textContent='GOTOWY';$('#stroopWord',m).style.color='';$('#stroopFeedback',m).textContent='';render()};render();
 }
 
-const wait=ms=>new Promise(r=>setTimeout(r,ms));const rand=(a,b)=>a+Math.random()*(b-a);
-function improveOddball(){
- const m=$('#m3');if(!m||m.dataset.visualOddball)return;m.dataset.visualOddball='1';const stim=$('#stim',m),run=$('#runexp',m);if(!stim||!run)return;stim.classList.add('oddball-stage');stim.innerHTML='<div class="oddball-fix">+</div>';
- const original=run.onclick;run.onclick=async()=>{if(run.disabled)return;run.disabled=true;const p=+($('#ptarget',m)?.value||20)/100,isi=+($('#isi',m)?.value||900),jit=+($('#jitter',m)?.value||150),n=Math.min(+($('#ntrials',m)?.value||60),18);for(let i=0;i<n;i++){const target=Math.random()<p;stim.innerHTML=`<div class="oddball-stim ${target?'target':'standard'}">${target?'●':'○'}</div><div class="oddball-live-label">${target?'BODZIEC DOCELOWY · S2':'BODZIEC STANDARDOWY · S1'}</div>`;await wait(Math.min(300,Math.max(160,isi*.28)));stim.innerHTML='<div class="oddball-fix">+</div><div class="oddball-live-label">przerwa między bodźcami</div>';await wait(Math.min(520,Math.max(180,isi+rand(-jit,jit)-Math.min(300,isi*.28))))}original?.call(run);run.disabled=false};
-}
-
 function compactTeaching(){
  const q=$('#mqeeg');q?.querySelector('.grid.g2')?.classList.add('qeeg-compare-row');
  const p=$('#m5'),intro=p?.querySelector('.teaching-intro'),pipe=p?.querySelector('#pipe')?.closest('.panel');if(intro&&pipe&&!intro.parentElement?.classList.contains('prep-top-row')){intro.innerHTML='<h2><span class="dot"></span>Co masz zrobić?</h2><p><b>Cel:</b> przygotować surowy EEG do analizy bez usuwania użytecznej aktywności. <b>Kolejność:</b> jakość kanałów → zakłócenia → filtry → referencja → segmentacja/odrzucanie → ICA → korekcja linii podstawowej.</p>';pipe.classList.add('pipeline-panel');const row=document.createElement('div');row.className='prep-top-row';intro.before(row);row.append(intro,pipe)}
@@ -81,5 +75,5 @@ function rebuildScanpath(){const m=$('#meye2');if(!m?.classList.contains('active
 function eyeLoop(){rebuildScanpath();requestAnimationFrame(eyeLoop)}
 
 function simplifyHeaders(){ $$('.module .head h1').forEach(h=>h.style.display='none'); }
-function init(){addStroop();setTimeout(()=>{buildGroupedNav();improveOddball();compactTeaching();improvePost();montageKey();eyePolish();simplifyHeaders();const wrap=$('#montage-map-wrap');if(wrap)new MutationObserver(montageKey).observe(wrap,{childList:true,subtree:true});new MutationObserver(()=>{renderGroups();simplifyHeaders()}).observe($('#main'),{subtree:true,attributes:true,attributeFilter:['class']})},1050);requestAnimationFrame(eyeLoop)}
+function init(){addStroop();setTimeout(()=>{buildGroupedNav();compactTeaching();improvePost();montageKey();eyePolish();simplifyHeaders();const wrap=$('#montage-map-wrap');if(wrap)new MutationObserver(montageKey).observe(wrap,{childList:true,subtree:true});new MutationObserver(()=>{renderGroups();simplifyHeaders()}).observe($('#main'),{subtree:true,attributes:true,attributeFilter:['class']})},1050);requestAnimationFrame(eyeLoop)}
 window.addEventListener('load',init,{once:true});window.addEventListener('eeg:module',e=>{if(e.detail==='m5'||e.detail==='mica'||e.detail==='mqeeg')setTimeout(compactTeaching,0);if(e.detail==='mpostx')setTimeout(()=>{improvePost();renderPost()},0);if(e.detail==='m2x')setTimeout(montageKey,0);if(e.detail==='meye2'){lastScan='';setTimeout(eyePolish,0)}});window.addEventListener('resize',()=>{lastScan=''});
