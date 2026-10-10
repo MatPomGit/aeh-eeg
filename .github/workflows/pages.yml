@@ -47,13 +47,14 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf _site
-          mkdir -p _site/laboratories
+          mkdir -p _site/laboratories _site/docs
           find simulator -maxdepth 1 -type f \( \
             -name '*.html' -o -name '*.css' -o -name '*.js' -o \
             -name '*.svg' -o -name '*.png' -o -name '*.jpg' -o \
             -name '*.jpeg' -o -name '*.webp' -o -name '*.ico' \
           \) -exec cp {} _site/ \;
           find laboratories -maxdepth 1 -type f -name '*.pdf' -exec cp {} _site/laboratories/ \;
+          find simulator/docs -maxdepth 1 -type f -name '*.pdf' -exec cp {} _site/docs/ \;
           touch _site/.nojekyll
 
       - name: Verify built site
@@ -66,6 +67,8 @@ jobs:
           test -f _site/logo.svg
           test -f _site/favicon.svg
           test -f _site/laboratories.html
+          test -f _site/docs/MATLAB_EEG_po_weryfikacji_naukowej.pdf
+          test -f _site/docs/Python_EEG_przeglad_rozszerzony.pdf
           test -n "$(find _site/laboratories -maxdepth 1 -type f -name '*.pdf' -print -quit)"
 
       - name: Upload Pages artifact
