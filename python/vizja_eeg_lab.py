@@ -36,13 +36,13 @@ def bootstrap():
         if r.returncode:
             sys.exit("Instalacja zależności nie powiodła się (sprawdź połączenie z internetem).")
 
-    # mne + edfio (odczyt/zapis EDF, FIF, BIDS) – opcjonalne; jedna próba instalacji
+    # mne + edfio + neurokit2 (EDF, FIF, BIDS, symulacja) – opcjonalne; jedna próba instalacji
     marker = vdir / ".mne_failed"
-    if run("-c", "import mne, edfio", capture_output=True).returncode and not marker.exists():
-        print("► Instalacja mne + edfio (obsługa EDF/FIF/BIDS)...")
-        if run("-m", "pip", "install", "mne", "edfio").returncode:
+    if run("-c", "import mne, edfio, neurokit2", capture_output=True).returncode and not marker.exists():
+        print("► Instalacja mne, edfio, neurokit2 (EDF/FIF/BIDS, symulacja NeuroKit2)...")
+        if run("-m", "pip", "install", "mne", "edfio", "neurokit2").returncode:
             marker.touch()
-            print("  Pominięto mne/edfio – EDF, FIF i BIDS niedostępne, CSV i NPZ działają normalnie.")
+            print("  Pominięto mne/edfio/neurokit2 – EDF, FIF, BIDS i generator NeuroKit2 niedostępne; reszta działa.")
 
     print("► Uruchamianie Vizja-EEG-Lab...")
     env = {**os.environ, "VIZJA_BOOT": "1"}
@@ -68,6 +68,11 @@ import pandas as pd
 import streamlit as st
 from scipy import signal
 from scipy.integrate import trapezoid
+
+try:
+    import neurokit2 as nk
+except Exception:
+    nk = None
 
 # Logo (opcjonalne): logo.png obok skryptu. Brak lub uszkodzony plik nie blokuje aplikacji.
 LOGO = None
@@ -102,25 +107,39 @@ def pink_noise(n, rng, amp):
     return x / x.std() * amp
 
 
-def synth_eeg(fs, dur, eyes_closed, blinks, mains):
-    """Sygnał syntetyczny: szum 1/f + rytmy + opcjonalne artefakty."""
-    rng = np.random.default_rng(1)
-    t = np.arange(0, dur, 1 / fs)
+def synth_eeg(fs, dur, eyes_closed, blinks, mains, engine="numpy",
+              alpha_hz=10.0, noise_uv=10.0, seed=1):
+    """Sygnał syntetyczny: szum 1/f + rytmy theta/alfa/beta + opcjonalne artefakty.
+    engine="neurokit2": szum różowy (nk.signal_noise) i rytmy (nk.signal_simulate)."""
+    rng = np.random.default_rng(seed)
+    n = int(dur * fs)
+    t = np.arange(n) / fs
     chans = ["Fp1", "Cz", "O1", "O2"]
     alpha_amp = {"Fp1": 3, "Cz": 5, "O1": 15, "O2": 15} if eyes_closed else \
                 {"Fp1": 2, "Cz": 2, "O1": 3, "O2": 3}
+    mod = 1 + 0.3 * np.sin(2 * np.pi * 0.2 * t)  # powolna modulacja amplitudy alfa
     data = []
-    for ch in chans:
-        x = pink_noise(len(t), rng, 10)
-        x += alpha_amp[ch] * np.sin(2 * np.pi * 10 * t + rng.uniform(0, 6)) \
-            * (1 + 0.3 * np.sin(2 * np.pi * 0.2 * t))
-        x += 2 * np.sin(2 * np.pi * 6 * t + rng.uniform(0, 6))     # theta
-        x += 1.5 * np.sin(2 * np.pi * 20 * t + rng.uniform(0, 6))  # beta
+    for i, ch in enumerate(chans):
+        if engine == "neurokit2":
+            kw = dict(duration=dur, sampling_rate=int(fs), random_state=seed + i)
+            x = nk.signal_noise(beta=1, **kw)[:n]
+            x = x / x.std() * noise_uv
+            alpha = nk.signal_simulate(frequency=alpha_hz, amplitude=alpha_amp[ch], noise=0, **kw)[:n]
+            slow = nk.signal_simulate(frequency=[6, 20], amplitude=[2, 1.5], noise=0, **kw)[:n]
+            # NeuroKit2 nie ustawia fazy – losowe przesunięcie różnicuje kanały
+            alpha = np.roll(alpha, rng.integers(0, int(fs)))
+            slow = np.roll(slow, rng.integers(0, int(fs)))
+            x = x + alpha * mod + slow
+        else:
+            x = pink_noise(n, rng, noise_uv)
+            x += alpha_amp[ch] * np.sin(2 * np.pi * alpha_hz * t + rng.uniform(0, 6)) * mod
+            x += 2 * np.sin(2 * np.pi * 6 * t + rng.uniform(0, 6))     # theta
+            x += 1.5 * np.sin(2 * np.pi * 20 * t + rng.uniform(0, 6))  # beta
         if blinks and ch == "Fp1":
             for tb in np.arange(2, dur, 4):
-                x += 100 * np.exp(-((t - tb) ** 2) / (2 * 0.08 ** 2))
-        if mains:
-            x += 8 * np.sin(2 * np.pi * 50 * t)
+                x = x + 100 * np.exp(-((t - tb) ** 2) / (2 * 0.08 ** 2))
+        if mains:  # 50 Hz: NeuroKit2 nie generuje tej częstotliwości przy Fs = 250 Hz
+            x = x + 8 * np.sin(2 * np.pi * 50 * t)
         data.append(x)
     return pd.DataFrame(np.array(data).T, columns=chans)
 
@@ -178,10 +197,19 @@ with st.sidebar:
     source = st.radio("Źródło", ["Sygnał syntetyczny", "Własny plik (CSV / EDF)"])
     if source == "Sygnał syntetyczny":
         fs = 250.0
+        engines = ["NumPy (wbudowany)"] + (["NeuroKit2"] if nk is not None else [])
+        engine = st.selectbox("Generator sygnału", engines)
+        if nk is None:
+            st.caption("NeuroKit2 niedostępny (pip install neurokit2).")
         eyes_closed = st.toggle("Oczy zamknięte (rytm alfa)", True)
+        alpha_hz = st.slider("Częstotliwość alfa [Hz]", 8.0, 13.0, 10.0, 0.5)
+        noise_uv = st.slider("Poziom szumu tła 1/f [µV]", 1, 30, 10)
+        seed = st.number_input("Ziarno losowe", 0, 9999, 1)
         blinks = st.toggle("Artefakt: mruganie (Fp1)", False)
         mains = st.toggle("Artefakt: sieć 50 Hz", False)
-        df = synth_eeg(fs, 20, eyes_closed, blinks, mains)
+        df = synth_eeg(fs, 20, eyes_closed, blinks, mains,
+                       "neurokit2" if engine == "NeuroKit2" else "numpy",
+                       alpha_hz, float(noise_uv), int(seed))
     else:
         up = st.file_uploader("Wczytaj plik", type=["csv", "edf"])
         fs_csv = st.number_input("Fs [Hz] (dla CSV)", 1.0, 5000.0, 250.0)
