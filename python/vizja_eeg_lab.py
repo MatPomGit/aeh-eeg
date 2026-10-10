@@ -273,7 +273,7 @@ def make_files(fmt, data, fs, names, bids, filt):
             sw["Notch"] = {"CenterHz": 50}
     na = lambda v: v if v else "n/a"
     ch_rows = ["name\ttype\tunits\tsampling_frequency\tlow_cutoff\thigh_cutoff\tnotch\tstatus"]
-    for n in names:
+    for n in unique_names(names, 16):  # tak samo nazwane są kanały w pliku EDF
         ch_rows.append("\t".join([n, "EEG", "uV", f"{fs:g}",
                                   str(na(filt["applied"] and filt["hp"])),
                                   str(na(filt["applied"] and filt["lp"])),
@@ -310,14 +310,22 @@ def tree_text(files):
 
 @st.cache_data(show_spinner="⏳ Przygotowanie podglądu eksportu…")
 def build_export(fmt, data, fs, names, bids, filt):
+    """Zwraca (pliki, bajty_do_pobrania, dane_faktycznie_zapisane)."""
+    if fmt in ("edf", "bids"):
+        # EDF zapisuje całe rekordy 1 s – niepełną końcówkę przycinamy (zamiast dopełniać zerami)
+        spr = int(round(fs))
+        n_use = (len(data) // spr) * spr if abs(fs - spr) < 1e-9 else len(data)
+        if n_use == 0:
+            raise RuntimeError("EDF i BIDS wymagają co najmniej 1 s danych – wydłuż zakres czasu.")
+        data = data[:n_use]
     files = make_files(fmt, data, fs, names, bids, filt)
     if fmt == "bids":
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
             for pth, content in files.items():
                 z.writestr(pth, content)
-        return files, buf.getvalue()
-    return files, next(iter(files.values()))
+        return files, buf.getvalue(), data
+    return files, next(iter(files.values())), data
 
 
 def dropdown(widget, *args, **kwargs):
@@ -562,16 +570,22 @@ with tab5:
         elif t1 - t0 < 1 / fs:
             st.warning("Zakres czasu jest za krótki.")
         else:
-            m = (t >= t0) & (t <= t1)
+            i0 = int(round(t0 * fs))
+            i1 = len(t) if t1 >= t[-1] - 0.5 / fs else int(round(t1 * fs))
             idx = [cols.index(c) for c in chans]
-            data = np.ascontiguousarray((x if which == "Przefiltrowane" else x_raw)[m][:, idx])
+            data = np.ascontiguousarray((x if which == "Przefiltrowane" else x_raw)[i0:i1][:, idx])
             filt = {"applied": which == "Przefiltrowane", "hp": hp, "lp": lp, "notch": notch}
             bids = {"name": b_name, "sub": b_sub, "ses": b_ses, "task": b_task, "ref": b_ref}
             try:
-                files, payload = build_export(fmt, data, fs, chans, bids, filt)
-                ex = dict(files=files, payload=payload, data=data, names=chans, fs=fs)
-            except RuntimeError as e:
-                st.error(str(e))
+                files, payload, used = build_export(fmt, data, fs, chans, bids, filt)
+                ex = dict(files=files, payload=payload, data=used, names=chans, fs=fs)
+                if len(used) < len(data):
+                    st.caption(f"ℹ️ EDF zapisuje całe sekundy – zakres przycięto z "
+                               f"{len(data) / fs:.2f} s do {len(used) / fs:.0f} s.")
+                if fmt in ("edf", "bids") and any(len(str(c)) > 16 for c in chans):
+                    st.caption("ℹ️ W EDF nazwy kanałów są skracane do 16 znaków.")
+            except (RuntimeError, ValueError, OSError) as e:
+                st.error(f"Nie udało się przygotować pliku: {e}")
         st.download_button(
             "💾 Zapisz plik" if fmt != "bids" else "💾 Zapisz (BIDS .zip)",
             ex["payload"] if ex else b"",
