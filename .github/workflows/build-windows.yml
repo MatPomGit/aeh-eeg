@@ -1,0 +1,37 @@
+name: Windows EXE
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'launcher.py'
+      - 'vizja_eeg_lab.py'
+      - 'logo.png'
+      - 'vizja-eeg-lab.ico'
+      - 'requirements-build.txt'
+      - '.github/workflows/build-windows.yml'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements-build.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-build.txt
+      - name: Create standalone application
+        shell: cmd
+        run: python -m PyInstaller --noconfirm --clean --onedir --console --name Vizja-EEG-Lab --icon vizja-eeg-lab.ico --add-data "vizja_eeg_lab.py;." --add-data "logo.png;." --collect-all streamlit --collect-all altair --collect-all pyarrow --collect-all mne --collect-all neurokit2 --collect-all edfio --collect-all matplotlib launcher.py
+      - name: Upload executable package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vizja-EEG-Lab-Windows
+          path: dist/Vizja-EEG-Lab/
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,10 @@
+pyinstaller>=6.10,<7
+streamlit>=1.40,<2
+numpy>=1.26,<3
+scipy>=1.13,<2
+matplotlib>=3.8,<4
+pandas>=2.2,<3
+pillow>=10,<13
+mne>=1.8,<2
+edfio>=0.4,<1
+neurokit2>=0.2.10,<1
