@@ -23,7 +23,18 @@ def open_browser(port):
     print('Nie udało się otworzyć strony. Sprawdź komunikaty w konsoli.')
 
 
+def configure_console_encoding():
+    """Avoid UnicodeEncodeError on Windows consoles with legacy code pages."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            try:
+                stream.reconfigure(errors='backslashreplace')
+            except (OSError, ValueError):
+                pass
+
+
 def main():
+    configure_console_encoding()
     app = resource('vizja_eeg_lab.py')
     if not app.is_file():
         raise FileNotFoundError(f'Brak pliku aplikacji: {app}')
