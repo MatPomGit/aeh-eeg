@@ -1,6 +1,6 @@
 """
 Vizja-EEG-Lab – prosta aplikacja dydaktyczna do wizualizacji i analizy sygnału EEG.
-Uniwersytet Vizja, neuropsychologia.
+Uniwersytet Vizja, eeg i cośtam cośtam
 
 Uruchomienie (wszystko dzieje się automatycznie – venv, instalacja, start):
     python vizja_eeg_lab.py
@@ -116,9 +116,12 @@ def synth_eeg(fs, dur, eyes_closed, blinks, mains, engine="numpy",
     rng = np.random.default_rng(seed)
     n = int(dur * fs)
     t = np.arange(n) / fs
-    chans = ["Fp1", "Cz", "O1", "O2"]
-    alpha_amp = {"Fp1": 3, "Cz": 5, "O1": 15, "O2": 15} if eyes_closed else \
-                {"Fp1": 2, "Cz": 2, "O1": 3, "O2": 3}
+    chans = ["Fp1", "Fp2", "C3", "C4", "P3", "P4", "O1", "O2"]
+    # amplituda alfa rośnie od okolicy czołowej do potylicznej; oczy zamknięte wzmacniają ją
+    region = lambda ch: "Fp" if ch.startswith("Fp") else ch[0]
+    amp = ({"Fp": 3, "C": 6, "P": 11, "O": 15} if eyes_closed
+           else {"Fp": 2, "C": 2.5, "P": 3, "O": 3})
+    alpha_amp = {ch: amp[region(ch)] for ch in chans}
     mod = 1 + 0.3 * np.sin(2 * np.pi * 0.2 * t)  # powolna modulacja amplitudy alfa
     data = []
     for i, ch in enumerate(chans):
@@ -137,17 +140,20 @@ def synth_eeg(fs, dur, eyes_closed, blinks, mains, engine="numpy",
             x += alpha_amp[ch] * np.sin(2 * np.pi * alpha_hz * t + rng.uniform(0, 6)) * mod
             x += 2 * np.sin(2 * np.pi * 6 * t + rng.uniform(0, 6))     # theta
             x += 1.5 * np.sin(2 * np.pi * 20 * t + rng.uniform(0, 6))  # beta
-        if blinks and ch == "Fp1":
+        if blinks and ch in ("Fp1", "Fp2"):
             for tb in np.arange(2, dur, 4):
-                x = x + 100 * np.exp(-((t - tb) ** 2) / (2 * 0.08 ** 2))
+                x = x + (100 if ch == "Fp1" else 90) * np.exp(-((t - tb) ** 2) / (2 * 0.08 ** 2))
         if mains:  # 50 Hz: NeuroKit2 nie generuje tej częstotliwości przy Fs = 250 Hz
             x = x + 8 * np.sin(2 * np.pi * 50 * t)
         data.append(x)
     return pd.DataFrame(np.array(data).T, columns=chans)
 
 
+TIME_COLS = {"time", "t", "czas", "time_s", "time [s]", "t [s]", "timestamp", "sample", "index"}
+
+
 def load_file(name, raw_bytes, fs_csv):
-    """Wczytuje CSV lub EDF z bajtów. Zwraca (DataFrame [µV], Fs)."""
+    """Wczytuje CSV lub EDF z bajtów. Zwraca (DataFrame [µV], Fs, notatka)."""
     if name.lower().endswith(".edf"):
         try:
             import mne
@@ -156,8 +162,27 @@ def load_file(name, raw_bytes, fs_csv):
         with tempfile.NamedTemporaryFile(suffix=".edf", delete=False) as tmp:
             tmp.write(raw_bytes)
         raw = mne.io.read_raw_edf(tmp.name, preload=True, verbose=False)
-        return pd.DataFrame(raw.get_data().T * 1e6, columns=raw.ch_names), float(raw.info["sfreq"])
-    return pd.read_csv(io.BytesIO(raw_bytes)), float(fs_csv)
+        return pd.DataFrame(raw.get_data().T * 1e6, columns=raw.ch_names), float(raw.info["sfreq"]), ""
+
+    # CSV: automatyczne wykrycie separatora (, ; tab) i przecinka dziesiętnego (Excel PL)
+    first = raw_bytes[:4096].decode("utf-8-sig", errors="ignore").splitlines()[:1]
+    sep = max([",", ";", "\t"], key=(first[0] if first else "").count)
+    for dec in (".", ","):
+        df = pd.read_csv(io.BytesIO(raw_bytes), sep=sep, decimal=dec, encoding="utf-8-sig")
+        nnum = df.select_dtypes("number").shape[1]
+        if nnum and nnum >= df.shape[1] - 1:
+            break
+    fs, note = float(fs_csv), ""
+    tcol = next((c for c in df.columns if str(c).strip().lower() in TIME_COLS), None)
+    if tcol is not None:  # kolumna czasu nie jest kanałem EEG
+        tv = pd.to_numeric(df[tcol], errors="coerce").to_numpy(float)
+        dt = np.nanmedian(np.diff(tv)) if len(tv) > 1 else np.nan
+        df = df.drop(columns=tcol)
+        if np.isfinite(dt) and dt > 0 and str(tcol).strip().lower() not in ("sample", "index"):
+            fs, note = round(1 / dt, 3), f"Fs z kolumny „{tcol}”"
+        else:
+            note = f"pominięto kolumnę „{tcol}”"
+    return df, fs, note
 
 
 @st.cache_data(show_spinner="⏳ Wczytywanie pliku…")
@@ -171,8 +196,10 @@ def cached_synth(*args):
 
 
 @st.cache_data(show_spinner="⏳ Filtrowanie sygnału…")
-def preprocess(x, fs, hp, lp, notch):
+def preprocess(x, fs, hp, lp, notch, car=False):
     x = x - x.mean(axis=0)
+    if car and x.shape[1] > 1:  # referencja średnia (CAR): odjęcie średniej ze wszystkich kanałów
+        x = x - x.mean(axis=1, keepdims=True)
     if hp or lp:
         hi = min(lp, fs / 2 - 1) if lp else None
         if hp and hi:
@@ -195,9 +222,25 @@ def band_powers(x, fs):
     return f, p, absolute
 
 
+def epoch_flags(bad, fs):
+    """Które 1-sekundowe epoki zawierają próbki oznaczone jako artefakt."""
+    spr = max(1, int(round(fs)))
+    ne = len(bad) // spr
+    return bad[:ne * spr].reshape(ne, spr).any(axis=1) if ne else np.array([], bool)
+
+
+def alpha_peak(f, p):
+    """Częstotliwość szczytu w paśmie 7–14 Hz (IAF); None, gdy brak wyraźnego maksimum."""
+    m = (f >= 7) & (f <= 14)
+    ff, pp = f[m], p[m]
+    i = int(np.argmax(pp)) if len(pp) else 0
+    return float(ff[i]) if 0 < i < len(pp) - 1 else None
+
+
 # ================================================================ EKSPORT
 FORMATS = {
     "CSV (.csv)": "csv",
+    "CSV dla Excela PL (; i przecinek)": "csv_pl",
     "NumPy (.npz)": "npz",
     "EDF (.edf)": "edf",
     "MNE-Python (.fif)": "fif",
@@ -245,10 +288,13 @@ def mne_bytes(data_uv, fs, names, fmt):
 def make_files(fmt, data, fs, names, bids, filt):
     """Zwraca słownik {ścieżka_względna: bajty}."""
     names = unique_names(names)
-    if fmt == "csv":
+    if fmt in ("csv", "csv_pl"):
         d = pd.DataFrame(data, columns=names)
         d.insert(0, "time_s", np.arange(len(data)) / fs)
-        return {"vizja_eeg.csv": d.to_csv(index=False, float_format="%.4f").encode()}
+        if fmt == "csv":
+            return {"vizja_eeg.csv": d.to_csv(index=False, float_format="%.4f").encode()}
+        return {"vizja_eeg.csv": d.to_csv(index=False, sep=";", decimal=",",
+                                          float_format="%.4f").encode("utf-8-sig")}
     if fmt == "npz":
         b = io.BytesIO()
         np.savez(b, data_uV=data, fs=fs, ch_names=np.array(names))
@@ -357,7 +403,7 @@ div[data-testid="stImage"] img{max-height:calc(100vh - 215px);width:auto !import
 # ---- miejsce na komunikaty o ładowaniu / błędach (u góry strony)
 top = st.container()
 
-# ---- panel boczny: dane i filtracja (tylko zbiera parametry)
+# ---- panel boczny: dane i przetwarzanie (tylko zbiera parametry)
 with st.sidebar:
     st.markdown("**📂 Źródło danych**")
     source = st.radio("Źródło", ["Sygnał syntetyczny", "Własny plik"], horizontal=True,
@@ -371,8 +417,8 @@ with st.sidebar:
                                 help="Przy zamkniętych oczach rytm alfa nad korą potyliczną "
                                      "(O1, O2) jest wyraźnie silniejszy.")
         art = dropdown(st.multiselect, "Artefakty (zakłócenia)",
-                       ["Mruganie (Fp1)", "Sieć 50 Hz"], placeholder="Brak",
-                       help="Dodaje typowe zakłócenia: mruganie powiekami (kanał Fp1) "
+                       ["Mruganie (Fp1/Fp2)", "Sieć 50 Hz"], placeholder="Brak",
+                       help="Dodaje typowe zakłócenia: mruganie powiekami (kanały czołowe) "
                             "i brum sieci energetycznej 50 Hz.")
         alpha_hz = st.slider("Częstotliwość rytmu alfa [Hz]", 8.0, 13.0, 10.0, 0.5,
                              help="Rytm alfa mieści się w pasmie 8–13 Hz; u dorosłych zwykle ok. 10 Hz.")
@@ -383,10 +429,16 @@ with st.sidebar:
     else:
         up = st.file_uploader("Plik CSV / EDF", type=["csv", "edf"])
         fs_csv = st.number_input("Częstotliwość próbkowania Fs [Hz]", 1.0, 5000.0, 250.0,
-                                 help="Dotyczy plików CSV (EDF zawiera tę informację). "
+                                 help="Dotyczy plików CSV bez kolumny czasu (z kolumną czasu Fs jest "
+                                      "wykrywane automatycznie; EDF zawiera Fs w nagłówku). "
                                       "Zatwierdź klawiszem Enter.")
 
-    st.markdown("**🎛️ Filtr pasmowy**")
+    st.markdown("**🎛️ Przetwarzanie**")
+    car_label = dropdown(st.selectbox, "Referencja", ["Oryginalna", "Średnia (CAR)"],
+                         help="CAR (Common Average Reference): od każdego kanału odejmowana jest "
+                              "średnia ze wszystkich kanałów. Zmienia obraz sygnału, np. "
+                              "ogranicza wspólne zakłócenia.")
+    car = car_label.startswith("Średnia")
     hp = st.slider("Dolna granica pasma – HP [Hz]", 0.0, 10.0, 0.5, 0.1,
                    help="Filtr górnoprzepustowy (HP): usuwa wolne dryfty linii podstawowej "
                         "(np. pot, ruchy). 0 = wyłączony.")
@@ -399,18 +451,19 @@ with st.sidebar:
                + (", bez 50 Hz" if notch else ""))
 
 # ---- ładowanie danych (spinnery pokazują się u góry strony)
+note = ""
 try:
     with top:
         if source == "Sygnał syntetyczny":
             fs = 250.0
-            df = cached_synth(fs, 20, eyes_closed, "Mruganie (Fp1)" in art, "Sieć 50 Hz" in art,
+            df = cached_synth(fs, 20, eyes_closed, "Mruganie (Fp1/Fp2)" in art, "Sieć 50 Hz" in art,
                               "neurokit2" if engine == "NeuroKit2" else "numpy",
                               alpha_hz, float(noise_uv), int(seed))
         elif up is None:
             st.info("Wczytaj plik CSV (kolumny = kanały, µV) lub EDF w panelu bocznym.")
             st.stop()
         else:
-            df, fs = cached_load(up.name, up.getvalue(), fs_csv)
+            df, fs, note = cached_load(up.name, up.getvalue(), fs_csv)
             df = df.select_dtypes("number")
             if df.shape[1] == 0:
                 raise RuntimeError("Plik nie zawiera kolumn numerycznych z kanałami EEG.")
@@ -426,7 +479,7 @@ if hp and lp_eff and hp >= lp_eff:
     top.warning("Dolna granica pasma (HP) musi być mniejsza niż górna (LP).")
     st.stop()
 
-# ---- nagłówek: logo, tytuł, wybór kanału
+# ---- nagłówek: logo, tytuł (ze statusem danych), wybór kanału
 logo_html = ""
 if LOGO is not None:
     try:
@@ -436,46 +489,68 @@ if LOGO is not None:
                      + '" style="height:46px">')
     except Exception:
         logo_html = ""
+status = (f"{df.shape[1]} kanałów · Fs {fs:g} Hz · {len(df) / fs:.0f} s · "
+          f"pasmo {hp:g}–{lp if lp else '∞'} Hz" + (" · CAR" if car else "")
+          + (f" · {note}" if note else ""))
 h_logo, h_title, h_ch = st.columns([0.7, 6, 2.3], vertical_alignment="center")
 h_logo.markdown(logo_html, unsafe_allow_html=True)
 h_title.markdown(
     '<div style="line-height:1.15"><span style="font-size:1.6rem;font-weight:700">'
     + ("" if LOGO is not None else "🧠 ") + 'Vizja-EEG-Lab</span><br>'
-    '<span style="opacity:.65;font-size:.85rem">Dydaktyczna aplikacja do wizualizacji i analizy '
-    'sygnału EEG – Uniwersytet Vizja</span></div>', unsafe_allow_html=True)
-channel = dropdown(h_ch.selectbox, "Kanał do analizy (widmo, pasma, spektrogram)", list(df.columns))
+    '<span style="opacity:.65;font-size:.85rem">Uniwersytet Vizja · dydaktyczna analiza EEG · '
+    + status + '</span></div>', unsafe_allow_html=True)
+_cols = list(df.columns)
+channel = dropdown(h_ch.selectbox, "Kanał do analizy (widmo, pasma, spektrogram)", _cols,
+                   index=_cols.index("O1") if "O1" in _cols else 0)
 
 x_raw = df.to_numpy(float)
 with top:
-    x = preprocess(x_raw, fs, float(hp), float(lp), bool(notch))
+    x = preprocess(x_raw, fs, float(hp), float(lp), bool(notch), bool(car))
 t = np.arange(len(x)) / fs
-ci = list(df.columns).index(channel)
+ci = _cols.index(channel)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Sygnał", "Widmo (PSD)", "Pasma EEG", "Spektrogram", "Eksport"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    ["Sygnał", "Widmo (PSD)", "Pasma EEG", "Spektrogram", "Eksport", "Pomoc"])
 
 # ---- 1. sygnał w czasie
 with tab1:
     L, R = st.columns([1, 5])
     with L:
         wmax = max(2, int(min(30, t[-1])))
-        dur_win = st.slider("Długość okna [s]", 1, wmax, min(10, wmax), help="Ile sekund sygnału pokazać na wykresie.")
+        dur_win = st.slider("Długość okna [s]", 1, wmax, min(10, wmax),
+                            help="Ile sekund sygnału pokazać na wykresie.")
         start = st.slider("Początek okna [s]", 0.0, float(max(t[-1] - dur_win, 0.1)), 0.0, 0.5,
                           help="Od którego momentu nagrania zaczyna się okno.")
+        scale = st.slider("Skala [µV na kanał]", 0, 300, 0, 10,
+                          help="Połowa zakresu wykresu dla jednego kanału. 0 = skala automatyczna.")
         show_raw = st.checkbox("Nałóż sygnał przed filtracją (szary)", False)
-        st.caption("Sygnał w dziedzinie czasu. Rytm alfa jest najsilniejszy w odprowadzeniach "
-                   "potylicznych (O1, O2); mruganie widać w Fp1, sieć jako drobne drgania 50 Hz.")
+        mark = st.toggle("Zaznacz artefakty", False,
+                         help="Czerwone pasma = próbki, w których amplituda przekracza próg "
+                              "w którymkolwiek kanale. W tytule: odsetek 1-s epok z artefaktem.")
+        thr = st.slider("Próg amplitudy [µV]", 50, 300, 100, 10, disabled=not mark)
     m = (t >= start) & (t < start + dur_win)
-    spread = np.percentile(np.abs(x[m]), 99) * 2.2
+    half_uv = scale or max(float(np.percentile(np.abs(x[m]), 99)), 1.0)
+    spread = half_uv * 2.2
+    nch_all = len(_cols)
     fig, ax = plt.subplots(figsize=(11, 4.6))
-    for i, ch in enumerate(df.columns):
+    for i in range(nch_all):
         off = -i * spread
         if show_raw:
             ax.plot(t[m], x_raw[m, i] - x_raw[m, i].mean() + off, c="lightgray", lw=0.7)
         ax.plot(t[m], x[m, i] + off, lw=0.8, c="k")
-    ax.set_yticks([-i * spread for i in range(len(df.columns))])
-    ax.set_yticklabels(df.columns)
+    ax.set_ylim(-(nch_all - 1) * spread - spread, spread)
+    ax.set_yticks([-i * spread for i in range(nch_all)])
+    ax.set_yticklabels(_cols)
     ax.set_xlabel("Czas [s]")
-    ax.set_title(f"EEG, skala: ±{spread / 2.2:.0f} µV na kanał")
+    title = f"EEG, skala: ±{half_uv:.0f} µV na kanał"
+    if mark:
+        bad = (np.abs(x) > thr).any(axis=1)
+        ax.fill_between(t[m], *ax.get_ylim(), where=bad[m], color="red", alpha=0.18,
+                        step="mid", lw=0)
+        ep = epoch_flags(bad, fs)
+        if len(ep):
+            title += f"  |  epoki 1 s z artefaktem (> {thr} µV): {100 * ep.mean():.0f}% ({ep.sum()}/{len(ep)})"
+    ax.set_title(title)
     R.pyplot(fig)
 
 # ---- 2. widmo PSD
@@ -486,13 +561,20 @@ with tab2:
                              help="Maksymalna częstotliwość widoczna na wykresie.")
         logy = st.toggle("Skala logarytmiczna osi mocy", True,
                          help="Skala log ułatwia porównanie słabych i silnych składowych widma.")
+        allch = st.toggle("Pokaż wszystkie kanały", False,
+                          help="Cienkie szare linie = pozostałe kanały; gruba czarna = kanał analizy.")
         st.caption("Widmo mocy (metoda Welcha): jakie częstotliwości dominują w sygnale. "
                    "Szczyt ok. 10 Hz = rytm alfa; pik 50 Hz = zakłócenie sieciowe.")
     f, p, _ = band_powers(x[:, ci], fs)
     fig, ax = plt.subplots(figsize=(11, 4.6))
     for (name, (lo, hi)), c in zip(BANDS.items(), COLORS):
         ax.axvspan(lo, hi, color=c, alpha=0.2, label=name)
-    (ax.semilogy if logy else ax.plot)(f, p, c="k")
+    ax.set_yscale("log" if logy else "linear")
+    if allch:
+        for i in range(nch_all):
+            _, pi, _ = band_powers(x[:, i], fs)
+            ax.plot(f, pi, c="gray", lw=0.6, alpha=0.5)
+    ax.plot(f, p, c="k", lw=1.4)
     ax.set_xlim(0, fmax_psd)
     ax.set_xlabel("Częstotliwość [Hz]")
     ax.set_ylabel("PSD [µV²/Hz]")
@@ -503,7 +585,7 @@ with tab2:
 # ---- 3. moc w pasmach
 with tab3:
     rows = {}
-    for i, ch in enumerate(df.columns):
+    for i, ch in enumerate(_cols):
         _, _, ab = band_powers(x[:, i], fs)
         tot = sum(ab.values())
         rows[ch] = {k: 100 * v / tot for k, v in ab.items()}
@@ -511,7 +593,11 @@ with tab3:
     L, M, R = st.columns([1.1, 2, 2.4])
     with L:
         tb = rel.iloc[:, 1] / rel.iloc[:, 3]
+        iaf = alpha_peak(*band_powers(x[:, ci], fs)[:2])
         st.metric(f"Theta/Beta ({channel})", f"{tb[channel]:.2f}")
+        st.metric("Szczyt alfa (IAF)", f"{iaf:.1f} Hz" if iaf else "brak piku",
+                  help="Częstotliwość maksimum widma w paśmie 7–14 Hz (indywidualna "
+                       "częstotliwość alfa). „Brak piku” = brak wyraźnego maksimum.")
         st.caption("Moc względna = udział mocy pasma w całkowitej mocy 0,5–45 Hz. Stosunek "
                    "theta/beta bywa wykorzystywany jako wskaźnik w badaniach nad uwagą.")
     with M:
@@ -555,7 +641,8 @@ with tab5:
         t0, t1 = st.slider("Zakres czasu [s]", 0.0, float(t[-1]), (0.0, float(t[-1])), 0.1)
         fmt_label = dropdown(st.selectbox, "Format pliku", list(FORMATS))
         fmt = FORMATS[fmt_label]
-        b_name, b_sub, b_ses, b_task, b_ref = "Vizja-EEG-Lab dataset", "01", "", "rest", "n/a"
+        b_name, b_sub, b_ses, b_task = "Vizja-EEG-Lab dataset", "01", "", "rest"
+        b_ref = "average" if car else "n/a"
         if fmt == "bids":
             with st.expander("Parametry BIDS", expanded=True):
                 b1, b2 = st.columns(2)
@@ -589,7 +676,7 @@ with tab5:
         st.download_button(
             "💾 Zapisz plik" if fmt != "bids" else "💾 Zapisz (BIDS .zip)",
             ex["payload"] if ex else b"",
-            ("vizja_bids.zip" if fmt == "bids" else f"vizja_eeg.{fmt}"),
+            ("vizja_bids.zip" if fmt == "bids" else f"vizja_eeg.{'csv' if fmt == 'csv_pl' else fmt}"),
             "application/zip" if fmt == "bids" else "application/octet-stream",
             disabled=ex is None, type="primary", use_container_width=True)
 
@@ -626,3 +713,32 @@ with tab5:
             st.pyplot(fig)
     else:
         B.info("Podgląd pojawi się automatycznie po wybraniu kanałów i formatu.")
+
+# ---- 6. pomoc
+with tab6:
+    H1, H2 = st.columns([1, 1.3])
+    with H1:
+        st.markdown(
+            "**Jak pracować**\n"
+            "1. Wybierz dane (syntetyczne lub własny plik CSV/EDF).\n"
+            "2. Ustaw referencję i filtr pasmowy – wykresy odświeżają się od razu.\n"
+            "3. Obserwuj sygnał, widmo, moc pasm i spektrogram; wybierz kanał w nagłówku.\n"
+            "4. Włącz „Zaznacz artefakty”, aby ocenić jakość zapisu.\n"
+            "5. W zakładce Eksport sprawdź podgląd i zapisz dane (CSV, EDF, BIDS…).\n\n"
+            "**Wskazówki**\n"
+            "- Przełącz „Oczy zamknięte” i porównaj alfa w O1/O2.\n"
+            "- Włącz mruganie i sieć 50 Hz, a potem filtr notch oraz LP – zobacz efekt.\n"
+            "- CAR zmienia kształt sygnału: porównaj kanały czołowe przed i po.")
+        st.caption("⚠️ Aplikacja dydaktyczna: dane syntetyczne i proste metody. Nie służy do "
+                   "diagnostyki klinicznej.")
+    with H2:
+        st.markdown(
+            "**Pasma EEG** (typowe skojarzenia, nie reguły)\n\n"
+            "| Pasmo | Zakres | Zwykle wiązane z |\n|---|---|---|\n"
+            "| Delta | 0,5–4 Hz | sen wolnofalowy; u osób czuwających często artefakty ruchowe |\n"
+            "| Theta | 4–8 Hz | senność, pamięć robocza, kontrola poznawcza |\n"
+            "| Alfa | 8–13 Hz | rozluźniony spoczynek, zwłaszcza z zamkniętymi oczami (potylica) |\n"
+            "| Beta | 13–30 Hz | aktywność poznawcza, uwaga, napięcie (także EMG) |\n"
+            "| Gamma | 30–45 Hz | integracja poznawcza; silnie zanieczyszczona EMG |\n\n"
+            "**Artefakty:** mruganie – duże wolne wychylenia w Fp1/Fp2; mięśnie – szybkie "
+            "zakłócenia powyżej 20 Hz; sieć – wąski pik 50 Hz.")
