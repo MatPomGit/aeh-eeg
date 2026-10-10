@@ -2,13 +2,17 @@
 
 Pakiet budowania programu dydaktycznego EEG na Windows 10/11 (64-bit).
 
-## Najprostszy sposób: GitHub Actions
+## Pobieranie programu (bez Pythona)
 
-1. Umieść **całą zawartość tego pakietu** w repozytorium GitHub (łącznie z `.github/workflows/build-windows.yml`).
-2. Wejdź w **Actions → Windows EXE → Run workflow**.
-3. Poczekaj na pomyślny wynik zadania **windows**.
-4. Na stronie zadania pobierz artefakt **Vizja-EEG-Lab-Windows** i rozpakuj ZIP.
-5. Uruchom **Vizja-EEG-Lab.exe**. Pozostałe pliki z folderu muszą pozostać obok pliku EXE.
+**[Pobierz najnowszą wersję Vizja-EEG-Lab dla Windows](https://github.com/MatPomGit/aeh-eeg/releases/latest)**
+
+Na stronie wydania pobierz `Vizja-EEG-Lab-Windows.zip`, rozpakuj **całe archiwum**, a następnie uruchom `Vizja-EEG-Lab.exe`. Katalog `_internal` musi pozostać obok pliku EXE.
+
+Każda pomyślnie przetestowana kompilacja z gałęzi `main` jest publikowana automatycznie jako GitHub Release. Suma SHA-256 jest dostępna w osobnym pliku obok archiwum.
+
+## Budowanie przez GitHub Actions
+
+Wejdź w **Actions → Windows EXE → Run workflow**. Po pomyślnym teście artefakt `Vizja-EEG-Lab-Windows` można również pobrać bezpośrednio ze strony zadania.
 
 ## Alternatywnie: budowanie na własnym komputerze
 
@@ -26,4 +30,4 @@ Program zawiera biblioteki MNE, edfio i NeuroKit2 do obsługi funkcji zależnych
 
 ## Zakres weryfikacji
 
-Pakiet i składnia plików zostały sprawdzone na Linuksie. Kompilacja Windows i działanie EXE wymagają uruchomienia zadania GitHub Actions. Nie należy uznawać EXE za przetestowany, dopóki zadanie nie zakończy się sukcesem i nie zostanie wykonany test uruchomieniowy na Windows.
+Budowanie i automatyczny test uruchomieniowy EXE na Windows odbywają się w GitHub Actions. Pomyślny test obejmuje start lokalnego serwera Streamlit i odpowiedź endpointu zdrowia. Nie zastępuje to pełnych testów funkcjonalnych interfejsu na komputerze docelowym.
