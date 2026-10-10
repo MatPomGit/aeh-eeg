@@ -23,7 +23,18 @@ def open_browser(port):
     print('Nie udało się otworzyć strony. Sprawdź komunikaty w konsoli.')
 
 
+def configure_console_encoding():
+    """Avoid UnicodeEncodeError on Windows consoles with legacy code pages."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            try:
+                stream.reconfigure(errors='backslashreplace')
+            except (OSError, ValueError):
+                pass
+
+
 def main():
+    configure_console_encoding()
     app = resource('vizja_eeg_lab.py')
     if not app.is_file():
         raise FileNotFoundError(f'Brak pliku aplikacji: {app}')
@@ -31,10 +42,13 @@ def main():
     os.environ['STREAMLIT_BROWSER_GATHER_USAGE_STATS'] = 'false'
     os.environ['MPLBACKEND'] = 'Agg'
     os.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'
+    # Frozen executable is a production deployment, not Streamlit development mode.
+    os.environ['STREAMLIT_GLOBAL_DEVELOPMENT_MODE'] = 'false'
     from streamlit.web import cli as stcli
     port = 8501
     # Fixed port: clear message if another instance already occupies it.
     sys.argv = ['streamlit', 'run', str(app),
+                '--global.developmentMode=false',
                 '--server.address=127.0.0.1', f'--server.port={port}',
                 '--server.headless=true', '--browser.gatherUsageStats=false',
                 '--server.fileWatcherType=none']
