@@ -55,17 +55,20 @@ jobs:
       - name: Build standalone application
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --onedir --console --name Vizja-EEG-Lab --icon vizja-eeg-lab.ico --add-data "vizja_eeg_lab.py;." --add-data "logo.png;." --collect-all streamlit --collect-all altair --collect-all pyarrow --collect-all mne --collect-all neurokit2 --collect-all edfio --collect-all matplotlib launcher.py
+          python -m PyInstaller --noconfirm --clean --onedir --console --name Vizja-EEG-Lab --icon vizja-eeg-lab.ico --add-data "vizja_eeg_lab.py;." --add-data "logo.png;." --collect-all streamlit --collect-all altair --collect-all pyarrow --collect-all mne --collect-all neurokit2 --collect-all edfio --collect-all matplotlib --recursive-copy-metadata streamlit --copy-metadata altair --copy-metadata pyarrow --copy-metadata mne --copy-metadata neurokit2 launcher.py
           if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }
           if (-not (Test-Path 'dist/Vizja-EEG-Lab/Vizja-EEG-Lab.exe')) { throw "EXE was not created" }
       - name: Smoke test packaged EXE
         shell: pwsh
         run: |
           $exe = (Resolve-Path 'dist/Vizja-EEG-Lab/Vizja-EEG-Lab.exe').Path
-          $process = Start-Process -FilePath $exe -PassThru -WorkingDirectory (Split-Path $exe)
+          $stdout = Join-Path $PWD 'exe-stdout.log'
+          $stderr = Join-Path $PWD 'exe-stderr.log'
+          $process = Start-Process -FilePath $exe -PassThru -WorkingDirectory (Split-Path $exe) -RedirectStandardOutput $stdout -RedirectStandardError $stderr
           try {
             $ready = $false
             for ($i = 0; $i -lt 90; $i++) {
+              $process.Refresh()
               if ($process.HasExited) { throw "EXE exited with code $($process.ExitCode)" }
               try {
                 $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8501/_stcore/health' -UseBasicParsing -TimeoutSec 2
@@ -76,8 +79,26 @@ jobs:
             if (-not $ready) { throw 'Streamlit health endpoint did not become ready in 180 seconds' }
             Write-Host 'Packaged EXE started successfully.'
           } finally {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+            Start-Sleep -Seconds 1
+            Write-Host '==== EXE stdout ===='
+            if (Test-Path $stdout) { Get-Content $stdout -Tail 150 }
+            Write-Host '==== EXE stderr ===='
+            if (Test-Path $stderr) { Get-Content $stderr -Tail 150 }
           }
+      - name: Upload smoke-test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vizja-EEG-Lab-startup-logs
+          path: |
+            python/exe-stdout.log
+            python/exe-stderr.log
+            python/build/Vizja-EEG-Lab/warn-Vizja-EEG-Lab.txt
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload Windows application
         uses: actions/upload-artifact@v4
         with:
