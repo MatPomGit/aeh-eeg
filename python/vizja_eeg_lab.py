@@ -170,7 +170,7 @@ if LOGO is not None:
     h1.image(LOGO, width=110)
     h2.title("Vizja-EEG-Lab")
 else:
-    st.title("🧠 Vizja-EEG-Lab")
+    st.title("Vizja-EEG-Lab")
 st.caption("Dydaktyczna aplikacja do wizualizacji i analizy sygnału EEG – Uniwersytet Vizja")
 
 with st.sidebar:
@@ -474,5 +474,5 @@ with tab5:
         ax.set_xlabel("Czas [s]")
         ax.set_title("Podgląd zapisywanego sygnału (pierwsze 10 s)")
         st.pyplot(fig)
-        st.download_button("💾 Zapisz / pobierz", ex["payload"], ex["dl_name"], ex["mime"],
+        st.download_button("Zapisz / pobierz", ex["payload"], ex["dl_name"], ex["mime"],
                            type="primary")
