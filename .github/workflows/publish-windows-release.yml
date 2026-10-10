@@ -1,0 +1,80 @@
+name: Publish Windows EXE release
+
+on:
+  workflow_run:
+    workflows: ["Windows EXE"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Successful Windows EXE workflow run ID on main"
+        required: true
+        default: "38090675504"
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: vizja-eeg-windows-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve and validate Windows build
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            run_id="$INPUT_RUN_ID"
+          else
+            run_id="$EVENT_RUN_ID"
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" > run.json
+          jq -e '.name == "Windows EXE" and .head_branch == "main" and .conclusion == "success" and .status == "completed"' run.json >/dev/null
+          sha="$(jq -r .head_sha run.json)"
+          tag="windows-${sha:0:12}"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Download tested application
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.source.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p package
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name Vizja-EEG-Lab-Windows --dir package
+          test -f package/Vizja-EEG-Lab.exe
+          (cd package && zip -q -r ../Vizja-EEG-Lab-Windows.zip .)
+          sha256sum Vizja-EEG-Lab-Windows.zip > Vizja-EEG-Lab-Windows.zip.sha256
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.source.outputs.tag }}
+          SHA: ${{ steps.source.outputs.sha }}
+          RUN_ID: ${{ steps.source.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; updating matching assets"
+            gh release upload "$TAG" Vizja-EEG-Lab-Windows.zip Vizja-EEG-Lab-Windows.zip.sha256 --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" Vizja-EEG-Lab-Windows.zip Vizja-EEG-Lab-Windows.zip.sha256 \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$SHA" \
+              --title "Vizja-EEG-Lab Windows (${SHA:0:12})" \
+              --notes "Samodzielna aplikacja Windows 10/11 (64-bit), spakowana i zweryfikowana przez GitHub Actions w przebiegu https://github.com/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}. Rozpakuj całe archiwum i uruchom Vizja-EEG-Lab.exe. Zachowaj katalog _internal przy pliku EXE."
+          fi
