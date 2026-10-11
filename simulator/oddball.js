@@ -37,7 +37,7 @@ function draw(){
   ctx.stroke();
  }
  const latest=odd.markers.at(-1),state=$('#oddballEegState');
- if(state&&latest){const ms=Math.max(0,Math.round((odd.t-latest.t)*1000));state.innerHTML=latest.target?`<b>S2 · bodziec niezgodny/docelowy</b> — ${ms} ms po bodźcu; obserwuj N2 i wyraźną dodatnią P3 około 300–450 ms.`:`<b>S1 · bodziec standardowy</b> — ${ms} ms po bodźcu; widoczne są głównie wczesne komponenty sensoryczne.`}
+ if(state&&latest){const ms=Math.max(0,Math.round((odd.t-latest.t)*1000));state.innerHTML=latest.target?`<b>S2 · bodziec niezgodny/docelowy</b> — ${ms} ms po bodźcu; obserwuj modelową N2/P3; latencja P3 w rzeczywistych zapisach jest zmienna.`:`<b>S1 · bodziec standardowy</b> — ${ms} ms po bodźcu; widoczne są głównie wczesne komponenty sensoryczne.`}
 }
 function loop(now){
  if(!odd.active){odd.raf=0;return}
@@ -72,7 +72,7 @@ function enhance(){
  const params=$('#runexp',m)?.closest('.panel');if(!params)return;
  const stim=$('#stim',m);stim?.classList.add('oddball-stage');if(stim)stim.innerHTML='<div class="oddball-fix">+</div><div class="oddball-live-label">oczekiwanie na bodziec</div>';
  let panel=$('.oddball-eeg-panel',m);if(!panel){panel=document.createElement('div');panel.className='panel oddball-eeg-panel';params.after(panel)}
- panel.innerHTML=`<h2><span class="dot"></span>EEG zsynchronizowany z bodźcem (Cz)</h2><canvas id="oddballEeg" width="900" height="250" aria-label="Ciągły sygnał EEG z odpowiedziami na bodźce S1 i S2"></canvas><div class="readout" id="oddballEegState">Uruchom eksperyment. Fragment odpowiedzi po S1 będzie zaznaczony fioletem, a po rzadkim S2 — czerwienią.</div><div class="readout">Znacznik pokazuje początek bodźca. S1 wywołuje głównie wczesną odpowiedź sensoryczną; S2 dodatkowo modelową N2/P3, z dodatnią P3 najlepiej widoczną około 300–450 ms po bodźcu.</div>`;
+ panel.innerHTML=`<h2><span class="dot"></span>EEG zsynchronizowany z bodźcem (Cz)</h2><canvas id="oddballEeg" width="900" height="250" aria-label="Ciągły sygnał EEG z odpowiedziami na bodźce S1 i S2"></canvas><div class="readout" id="oddballEegState">Uruchom eksperyment. Fragment odpowiedzi po S1 będzie zaznaczony fioletem, a po rzadkim S2 — czerwienią.</div><div class="readout">Znacznik pokazuje początek bodźca. S1 wywołuje głównie wczesną odpowiedź sensoryczną; S2 dodatkowo modelową N2/P3, z dodatnią modelową P3 w okolicy 300–450 ms. W rzeczywistych badaniach latencja P3 jest zmienna i zależy m.in. od zadania, wieku i osoby badanej.</div>`;
  if(!odd.buf.length)initBuffer();draw();
  $('#runexp',m).onclick=()=>runExperiment(m);
  if(m.classList.contains('active'))setActive(true);
