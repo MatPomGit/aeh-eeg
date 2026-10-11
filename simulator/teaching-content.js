@@ -15,7 +15,7 @@ function removeLegacyIntro(){
 const LESSONS={
  m1x:{
   title:'Jak interpretować surowy sygnał EEG?',
-  intro:'Elektrody mierzą różnice potencjałów na skórze głowy. Sygnał odzwierciedla głównie sumowanie aktywności postsynaptycznej populacji neuronów oraz artefakty.',
+  intro:'EEG mierzy niewielkie różnice napięcia na skórze głowy. Powstają one głównie wtedy, gdy wiele neuronów działa w podobnym czasie. Na zapis nakładają się też sygnały z oczu i mięśni.',
   observe:['Porównaj amplitudę i rytmiczność sygnału między kanałami, zamiast oceniać pojedynczą próbkę.','Zwróć uwagę, że prawidłowy EEG jest zmienny w czasie i nie przypomina idealnej sinusoidy.','Szukaj zmian powtarzalnych i zależnych od stanu osoby badanej, np. otwarcia lub zamknięcia oczu.'],
   trap:'Duża amplituda nie oznacza automatycznie silniejszej aktywności mózgu. Może wynikać z EOG, EMG, ruchu elektrody albo nieprawidłowej referencji.',
   task:'Wskaż fragment, którego nie dałoby się wiarygodnie zinterpretować bez informacji o artefaktach i stanie osoby badanej. Uzasadnij dlaczego.'
@@ -43,42 +43,42 @@ const LESSONS={
  },
  msimlive2:{
   title:'Artefakt jest częścią rzeczywistego pomiaru',
-  intro:'Mruganie generuje artefakty EOG, a napięcie mięśni artefakty EMG. Oba sygnały nakładają się na EEG już podczas rejestracji.',
+  intro:'Mrugnięcie wywołuje dużą, zwykle wolną zmianę napięcia, a napięcie mięśni dodaje szybsze wahania. To artefakty EOG i EMG, które mogą zasłaniać sygnał mózgowy.',
   observe:['Zamknij oczy i porównaj kanał potyliczny z czołowymi.','Mrugnij kilka razy i sprawdź, gdzie efekt EOG jest największy.','Poruszaj żuchwą lub napnij mięśnie twarzy i obserwuj szerokopasmowy charakter EMG.'],
   trap:'Automatyczne usuwanie wszystkiego, co ma dużą amplitudę, może usuwać także użyteczny sygnał neuronalny.',
   task:'Wykonaj trzy krótkie próby: oczy otwarte, oczy zamknięte i napięta żuchwa. Opisz, po czym rozpoznajesz każdy stan w EEG.'
  },
  mphys2:{
   title:'Różne sygnały — różne skale czasu',
-  intro:'EKG rejestruje aktywność elektryczną serca, EMG mięśni, a EDA zmiany przewodnictwa skóry związane z aktywnością gruczołów potowych. Sygnały różnią się czasem reakcji.',
+  intro:'EKG pokazuje elektryczną pracę serca, EMG napięcie mięśni, a EDA zmiany przewodnictwa skóry związane z poceniem. EMG może reagować szybko, natomiast EDA zwykle narasta przez kilka sekund.',
   observe:['EKG reaguje w rytmie kolejnych cykli pracy serca.','EDA ma wolniejszą odpowiedź i zwykle nie zmienia się natychmiast po bodźcu.','EMG może zmieniać się bardzo szybko i ma szerokie widmo częstotliwości.'],
   trap:'Nie porównuj bezpośrednio amplitud sygnałów wyrażonych w różnych jednostkach i pochodzących z różnych torów pomiarowych.',
   task:'Dla nagłego bodźca zapisz oczekiwaną kolejność zmian EMG, EKG i EDA oraz uzasadnij ją fizjologicznie.'
  },
  meye2:{
   title:'Eye tracking mierzy zachowanie wzrokowe, nie uwagę wprost',
-  intro:'Eye tracking mierzy położenie spojrzenia, fiksacje i sakkady. Fiksacja wskazuje miejsce patrzenia, ale nie dowodzi świadomego przetwarzania treści.',
+  intro:'Eye tracking pokazuje, gdzie patrzymy. Fiksacja to względnie stabilne spojrzenie, a sakkada to szybkie przeniesienie wzroku. Samo patrzenie na obiekt nie oznacza jeszcze, że został zrozumiany.',
   observe:['Odróżnij fiksacje od sakkad i zwróć uwagę na kolejność odwiedzania obszarów.','Porównaj pojedynczą ścieżkę wzroku z mapą zagregowaną — odpowiadają na inne pytania.','Zwróć uwagę na znaczenie kalibracji i geometrii kamery.'],
   trap:'Heatmapa bez informacji o czasie, kolejności i obszarach zainteresowania może prowadzić do nadinterpretacji.',
   task:'Zbuduj dwie różne ścieżki prowadzące do podobnej heatmapy i wyjaśnij, jaką informację traci agregacja.'
  },
  m3:{
   title:'Oddball: od zdarzenia do odpowiedzi wywołanej',
-  intro:'W oddball rzadkie bodźce docelowe występują wśród częstych standardowych. Znaczniki czasu pozwalają wyrównać epoki EEG i obliczyć ERP.',
+  intro:'W zadaniu oddball większość bodźców się powtarza, a nieliczne są inne i wymagają reakcji. EEG dzieli się na krótkie fragmenty od chwili bodźca, czyli epoki. Ich średnia pozwala zobaczyć odpowiedź ERP.',
   observe:['Porównaj odpowiedzi po S1 i S2, zwracając uwagę na opóźnienie komponentów względem znacznika.','Sprawdź, że pojedyncza odpowiedź jest zaszumiona i nie musi przypominać średniego ERP.','Obserwuj, że P3 jest zjawiskiem czasowo związanym ze zdarzeniem, a nie stałą falą EEG.'],
   trap:'Komponent ERP nie powinien być identyfikowany wyłącznie po jednym lokalnym maksimum w pojedynczej próbie.',
   task:'Wyjaśnij, dlaczego błąd synchronizacji znacznika bodźca o kilkadziesiąt milisekund pogarsza uśredniony ERP.'
  },
  mstroop:{
   title:'Efekt Stroopa jako miara interferencji',
-  intro:'Efekt Stroopa to zwykle dłuższy czas reakcji przy niezgodności koloru czcionki i znaczenia słowa. Interferencję oblicza się jako różnicę między warunkami.',
+  intro:'Gdy słowo „zielony” zapisano na czerwono, trudniej szybko nazwać kolor czcionki. Efekt Stroopa mierzy się, porównując czas i poprawność odpowiedzi w próbach zgodnych oraz niezgodnych.',
   observe:['Porównuj próby zgodne i niezgodne u tej samej osoby.','Uwzględniaj zarówno czas reakcji, jak i poprawność.','Zbierz wystarczającą liczbę prób przed interpretacją średniej.'],
   trap:'Pojedynczy wolny wynik nie świadczy o deficycie kontroli poznawczej — wpływają na niego m.in. losowa zmienność, strategia i opóźnienie reakcji.',
   task:'Wykonaj serię prób i sprawdź, czy efekt interferencji pozostaje podobny po zwiększeniu liczby obserwacji.'
  },
  m5:{
   title:'Preprocessing jest częścią analizy, a nie kosmetyką',
-  intro:'Preprocessing obejmuje kontrolę kanałów, filtrowanie, referencjonowanie i ocenę artefaktów. Każdy krok może zmienić amplitudę, fazę lub widmo EEG.',
+  intro:'Przed analizą EEG sprawdza się jakość kanałów, ogranicza zakłócenia i wybiera referencję. Filtr może usunąć szum, ale także osłabić potrzebny sygnał lub przesunąć jego przebieg w czasie.',
   observe:['Kontroluj dane przed i po każdym kroku zamiast stosować cały pipeline „w ciemno”.','Parametry filtrów powinny wynikać z rodzaju analizy i charakterystyki rejestracji.','Zapisuj kolejność oraz parametry operacji, aby analiza była reprodukowalna.'],
   trap:'Bardziej „gładki” sygnał nie musi być sygnałem bardziej prawdziwym.',
   task:'Dla każdej zastosowanej operacji dopisz jedno zdanie: jaki problem usuwa i jaki użyteczny sygnał może przypadkowo zmienić.'
@@ -99,7 +99,7 @@ const LESSONS={
  },
  mqeeg:{
   title:'qEEG: liczby wymagają kontekstu',
-  intro:'qEEG opisuje zapis liczbowo, m.in. mocą bezwzględną i względną pasm. Wyniki zależą od referencji, filtracji, artefaktów i warunków rejestracji.',
+  intro:'qEEG zamienia przebieg EEG na liczby, np. moc rytmu alfa. Moc bezwzględna opisuje jej wartość, a względna udział w mocy wybranego zakresu częstotliwości. Obie zależą od sposobu analizy.',
   observe:['Rozróżniaj moc bezwzględną i względną.','Sprawdź, jak wynik zależy od referencji, preprocessing’u i długości danych.','Interpretuj cechy względem jasno zdefiniowanej normy lub hipotezy badawczej, uwzględniając wiek, stan czuwania, referencję, artefakty i wielokrotne porównania.'],
   trap:'Wartość odstająca od normy statystycznej nie jest równoznaczna z rozpoznaniem klinicznym.',
   task:'Wybierz jedną cechę qEEG i wypisz trzy czynniki techniczne, które mogą zmienić jej wartość bez zmiany stanu klinicznego.'
@@ -120,21 +120,21 @@ const LESSONS={
  },
  mclinical:{
   title:'EEG kliniczne wspiera rozpoznanie — nie zastępuje diagnozy',
-  intro:'Znaczenie diagnostyczne wzorców EEG zależy od wskazania klinicznego. W ocenie markerów istotne są czułość, swoistość i kontekst badania.',
+  intro:'Nie każdy nietypowy zapis EEG oznacza chorobę. Czułość mówi, jak często test wykrywa badane zaburzenie, a swoistość, jak często daje wynik ujemny u osób bez niego. Znaczenie wyniku zależy od objawów i celu badania.',
   observe:['Oddzielaj markery o zastosowaniu klinicznym od korelatów grupowych z badań naukowych.','Pytaj o czułość, swoistość i populację, w której badano marker.','Zwracaj uwagę, czy wynik dotyczy pojedynczego pacjenta, czy różnicy średnich między grupami.'],
   trap:'Korelacja cechy EEG z zaburzeniem nie oznacza, że można na tej podstawie rozpoznać zaburzenie u konkretnej osoby.',
   task:'Dla wybranego przykładu sformułuj osobno: co pokazuje EEG, czego nie pokazuje i jaka informacja kliniczna jest potrzebna dodatkowo.'
  },
  mquiz:{
   title:'Sprawdzaj model mentalny, nie pamięć etykiet',
-  intro:'Pytania sprawdzają rozumienie rejestracji EEG, przetwarzania sygnału i interpretacji wyników.',
+  intro:'Sprawdź, czy potrafisz wyjaśnić, skąd bierze się sygnał EEG, jak zmieniają go filtry i dlaczego sam wykres nie wystarcza do wyciągania wniosków.',
   observe:['Po każdej odpowiedzi spróbuj wyjaśnić, dlaczego pozostałe możliwości są mniej trafne.','Wracaj do modułu źródłowego, jeśli odpowiedź była zgadywana.','Łącz pojęcia z konkretnym etapem pipeline’u EEG.'],
   trap:'Wysoki wynik testu nie gwarantuje umiejętności poprawnej analizy rzeczywistych danych.',
   task:'Wybierz jedno pytanie i dopisz własny przykład eksperymentalny, który ilustruje sprawdzaną zasadę.'
  },
  mformats:{
   title:'Format pliku wpływa na odtwarzalność analizy',
-  intro:'Zapis EEG wymaga próbek, częstotliwości próbkowania, jednostek i nazw kanałów oraz znaczników zdarzeń. Sprawdź, które metadane zachowuje wybrany format.',
+  intro:'Sam ciąg liczb nie wystarcza do odtworzenia EEG. Potrzebne są też informacje, ile próbek zapisano w sekundzie, z których elektrod pochodzą, w jakich jednostkach są podane i kiedy wystąpiły bodźce.',
   observe:['Sprawdź, czy format zachowuje zdarzenia i metadane.','Rozróżniaj format roboczy programu od formatu wymiany danych.','Kontroluj jednostki oraz skalowanie amplitudy po imporcie i eksporcie.'],
   trap:'Poprawne otwarcie pliku nie dowodzi, że wszystkie metadane zostały zachowane prawidłowo.',
   task:'Wypisz minimalny zestaw informacji, bez którego inna osoba nie mogłaby jednoznacznie zinterpretować zapisanego EEG.'
