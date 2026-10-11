@@ -31,7 +31,7 @@ const LESSONS={
   title:'Topografia nie jest lokalizacją źródła',
   intro:'Elektroda nad płatem potylicznym nie rejestruje wyłącznie aktywności tego płata. Prąd rozchodzi się przez tkanki głowy, dlatego sygnały z różnych obszarów nakładają się na siebie. To zjawisko nazywamy przewodzeniem objętościowym.',
   observe:['Łącz topografię z funkcją ostrożnie i zawsze uwzględniaj rozchodzenie się pola elektrycznego.','Traktuj związki „płat–funkcja–pasmo” jako heurystykę dydaktyczną, a nie mapę jeden-do-jednego.','Porównuj wzorce przestrzenne wielu kanałów zamiast pojedynczej elektrody.'],
-  trap:'Błąd odwrotny EEG jest niedookreślony: ten sam rozkład potencjałów na skórze może być zgodny z wieloma konfiguracjami źródeł.',
+  trap:'Ten sam zapis na elektrodach może powstać wskutek aktywności różnych obszarów mózgu. Dlatego położenia źródła nie da się wyznaczyć jednoznacznie z samego EEG.',
   task:'Wybierz jedną funkcję poznawczą i wyjaśnij, dlaczego nie należy przypisywać jej do pojedynczej elektrody.'
  },
  m2x:{
@@ -59,14 +59,14 @@ const LESSONS={
   title:'Eye tracking mierzy zachowanie wzrokowe, nie uwagę wprost',
   intro:'Eye tracking pokazuje, gdzie patrzymy. Fiksacja to względnie stabilne spojrzenie, a sakkada to szybkie przeniesienie wzroku. Samo patrzenie na obiekt nie oznacza jeszcze, że został zrozumiany.',
   observe:['Odróżnij fiksacje od sakkad i zwróć uwagę na kolejność odwiedzania obszarów.','Porównaj pojedynczą ścieżkę wzroku z mapą zagregowaną — odpowiadają na inne pytania.','Zwróć uwagę na znaczenie kalibracji i geometrii kamery.'],
-  trap:'Heatmapa bez informacji o czasie, kolejności i obszarach zainteresowania może prowadzić do nadinterpretacji.',
+  trap:'Dwie osoby mogą mieć podobną mapę spojrzeń, choć oglądały elementy w innej kolejności. Mapa nie pokazuje przebiegu spojrzenia w czasie.',
   task:'Zbuduj dwie różne ścieżki prowadzące do podobnej heatmapy i wyjaśnij, jaką informację traci agregacja.'
  },
  m3:{
   title:'Oddball: od zdarzenia do odpowiedzi wywołanej',
   intro:'W zadaniu oddball większość bodźców się powtarza, a nieliczne są inne i wymagają reakcji. EEG dzieli się na krótkie fragmenty od chwili bodźca, czyli epoki. Ich średnia pozwala zobaczyć odpowiedź ERP.',
   observe:['Porównaj odpowiedzi po S1 i S2, zwracając uwagę na opóźnienie komponentów względem znacznika.','Sprawdź, że pojedyncza odpowiedź jest zaszumiona i nie musi przypominać średniego ERP.','Obserwuj, że P3 jest zjawiskiem czasowo związanym ze zdarzeniem, a nie stałą falą EEG.'],
-  trap:'Komponent ERP nie powinien być identyfikowany wyłącznie po jednym lokalnym maksimum w pojedynczej próbie.',
+  trap:'Pojedynczy szczyt napięcia może być przypadkowym zakłóceniem. Komponent ERP ocenia się na podstawie wielu prób, czasu po bodźcu i rozmieszczenia na elektrodach.',
   task:'Wyjaśnij, dlaczego błąd synchronizacji znacznika bodźca o kilkadziesiąt milisekund pogarsza uśredniony ERP.'
  },
  mstroop:{
@@ -87,63 +87,63 @@ const LESSONS={
   title:'ICA rozdziela mieszaniny statystycznie, nie anatomicznie',
   intro:'ICA próbuje rozdzielić nakładające się sygnały na składniki, np. aktywność mózgu i mruganie. Nie rozpoznaje ich znaczenia automatycznie: komponent ocenia się po rozmieszczeniu na elektrodach, przebiegu i częstotliwościach.',
   observe:['Szukaj zgodności kilku cech komponentu, np. topografii czołowej, dużych wolnych defleksji i związku z mrugnięciem.','Porównuj dane przed i po rekonstrukcji.','Usuwaj możliwie mało komponentów i dokumentuj kryteria.'],
-  trap:'Etykieta automatycznego klasyfikatora komponentów jest podpowiedzią, a nie dowodem.',
+  trap:'Klasyfikator może pomylić mruganie z aktywnością mózgu. Przed usunięciem komponentu sprawdź jego przebieg, widmo i rozkład na elektrodach.',
   task:'Wybierz komponent artefaktowy i podaj co najmniej dwa niezależne argumenty uzasadniające jego odrzucenie.'
  },
  mpostx:{
   title:'Uśrednianie zmniejsza szum, ale nie tworzy informacji',
   intro:'Gdy uśrednisz wiele odpowiedzi na ten sam bodziec, powtarzalny sygnał ERP pozostaje, a przypadkowe zakłócenia częściowo się znoszą. Przy niezależnym szumie jego poziom spada w przybliżeniu jak 1/√N, gdzie N to liczba prób.',
   observe:['Zwiększ liczbę prób i śledź stabilizację kształtu ERP lub PSD.','Porównaj zmniejszanie wariancji z zachowaniem sygnału powtarzalnego.','Sprawdź, czy wynik nie jest zdominowany przez kilka odstających prób.'],
-  trap:'Duże N nie naprawia systematycznego błędu, np. złych znaczników zdarzeń albo błędnego filtra.',
+  trap:'Nawet tysiąc prób nie poprawi wyniku, jeśli wszystkie znaczniki bodźców są przesunięte w czasie.',
   task:'Porównaj wynik dla małej i dużej liczby segmentów. Opisz, co się stabilizuje, a co pozostaje niezmienne.'
  },
  mqeeg:{
   title:'qEEG: liczby wymagają kontekstu',
   intro:'qEEG zamienia przebieg EEG na liczby, np. moc rytmu alfa. Moc bezwzględna opisuje jej wartość, a względna udział w mocy wybranego zakresu częstotliwości. Obie zależą od sposobu analizy.',
   observe:['Rozróżniaj moc bezwzględną i względną.','Sprawdź, jak wynik zależy od referencji, preprocessing’u i długości danych.','Interpretuj cechy względem jasno zdefiniowanej normy lub hipotezy badawczej, uwzględniając wiek, stan czuwania, referencję, artefakty i wielokrotne porównania.'],
-  trap:'Wartość odstająca od normy statystycznej nie jest równoznaczna z rozpoznaniem klinicznym.',
+  trap:'Nietypowa moc pasma może wynikać z senności, mrugania lub zmiany referencji, a nie z zaburzenia.',
   task:'Wybierz jedną cechę qEEG i wypisz trzy czynniki techniczne, które mogą zmienić jej wartość bez zmiany stanu klinicznego.'
  },
  mheat:{
   title:'Mapa topograficzna jest interpolacją pomiarów',
   intro:'Kolor w miejscu elektrody odpowiada obliczonej wartości EEG. Między elektrodami program szacuje wartości na podstawie sąsiednich punktów, czyli wykonuje interpolację. Zawsze sprawdzaj skalę kolorów.',
   observe:['Najpierw sprawdź skalę kolorów i jednostkę.','Zwróć uwagę, gdzie rzeczywiście znajdują się elektrody pomiarowe.','Porównuj mapy tylko wtedy, gdy używają zgodnej skali i tego samego sposobu przetwarzania.'],
-  trap:'Ostra granica koloru na mapie nie oznacza ostrej granicy neuroanatomicznej.',
+  trap:'Granica kolorów wynika z przyjętej skali i sposobu interpolacji, nie z rzeczywistej granicy obszarów mózgu.',
   task:'Wyjaśnij, dlaczego ta sama mapa może wyglądać bardziej lub mniej „dramatycznie” po zmianie zakresu skali kolorów.'
  },
  m7:{
   title:'Lokalizacja źródeł to problem odwrotny',
   intro:'Elektrody mierzą sygnał na powierzchni głowy, a lokalizacja źródeł próbuje ustalić, skąd pochodzi on w mózgu. Wiele różnych źródeł może dać podobny zapis, dlatego algorytm korzysta z modelu głowy i dodatkowych założeń.',
   observe:['Oddziel dane pomiarowe od wyniku modelu.','Sprawdź, jakie założenia ograniczają przestrzeń możliwych rozwiązań.','Traktuj wynik jako estymację zależną od modelu, liczby elektrod i jakości geometrii.'],
-  trap:'Najbardziej kolorowy obszar rekonstrukcji nie jest bezpośrednim „zdjęciem aktywnego mózgu”.',
+  trap:'Jasny obszar na mapie źródeł to wynik obliczeń zależny od modelu, a nie bezpośredni pomiar aktywności wewnątrz mózgu.',
   task:'Wymień dwie informacje dodatkowe, które poprawiają wiarygodność lokalizacji źródła poza samym przebiegiem EEG.'
  },
  mclinical:{
   title:'EEG kliniczne wspiera rozpoznanie — nie zastępuje diagnozy',
   intro:'Nie każdy nietypowy zapis EEG oznacza chorobę. Czułość mówi, jak często test wykrywa badane zaburzenie, a swoistość, jak często daje wynik ujemny u osób bez niego. Znaczenie wyniku zależy od objawów i celu badania.',
   observe:['Oddzielaj markery o zastosowaniu klinicznym od korelatów grupowych z badań naukowych.','Pytaj o czułość, swoistość i populację, w której badano marker.','Zwracaj uwagę, czy wynik dotyczy pojedynczego pacjenta, czy różnicy średnich między grupami.'],
-  trap:'Korelacja cechy EEG z zaburzeniem nie oznacza, że można na tej podstawie rozpoznać zaburzenie u konkretnej osoby.',
+  trap:'Jeśli średnia moc danego pasma różni dwie grupy, ich pojedyncze wyniki nadal mogą się nakładać. Sama różnica grupowa nie wystarcza do diagnozy.',
   task:'Dla wybranego przykładu sformułuj osobno: co pokazuje EEG, czego nie pokazuje i jaka informacja kliniczna jest potrzebna dodatkowo.'
  },
  mquiz:{
   title:'Sprawdzaj model mentalny, nie pamięć etykiet',
   intro:'Sprawdź, czy potrafisz wyjaśnić, skąd bierze się sygnał EEG, jak zmieniają go filtry i dlaczego sam wykres nie wystarcza do wyciągania wniosków.',
   observe:['Po każdej odpowiedzi spróbuj wyjaśnić, dlaczego pozostałe możliwości są mniej trafne.','Wracaj do modułu źródłowego, jeśli odpowiedź była zgadywana.','Łącz pojęcia z konkretnym etapem pipeline’u EEG.'],
-  trap:'Wysoki wynik testu nie gwarantuje umiejętności poprawnej analizy rzeczywistych danych.',
+  trap:'Znajomość definicji nie zastępuje umiejętności rozpoznania artefaktu lub błędnej referencji na wykresie.',
   task:'Wybierz jedno pytanie i dopisz własny przykład eksperymentalny, który ilustruje sprawdzaną zasadę.'
  },
  mformats:{
   title:'Format pliku wpływa na odtwarzalność analizy',
   intro:'Sam ciąg liczb nie wystarcza do odtworzenia EEG. Potrzebne są też informacje, ile próbek zapisano w sekundzie, z których elektrod pochodzą, w jakich jednostkach są podane i kiedy wystąpiły bodźce.',
   observe:['Sprawdź, czy format zachowuje zdarzenia i metadane.','Rozróżniaj format roboczy programu od formatu wymiany danych.','Kontroluj jednostki oraz skalowanie amplitudy po imporcie i eksporcie.'],
-  trap:'Poprawne otwarcie pliku nie dowodzi, że wszystkie metadane zostały zachowane prawidłowo.',
+  trap:'Plik może się otworzyć mimo błędnych jednostek lub brakujących znaczników. Po imporcie sprawdź amplitudę, częstotliwość próbkowania i zdarzenia.',
   task:'Wypisz minimalny zestaw informacji, bez którego inna osoba nie mogłaby jednoznacznie zinterpretować zapisanego EEG.'
  },
  mbids:{
   title:'BIDS zamienia zbiór plików w opisany eksperyment',
   intro:'EEG-BIDS określa, jak nazywać pliki, gdzie je umieszczać i jak zapisywać opis badania. Dzięki temu inny badacz lub program może odczytać, do kogo należą dane, z jakiego zadania pochodzą i jak je zarejestrowano.',
   observe:['Oddzielaj dane surowe od danych pochodnych.','Trzymaj metadane eksperymentu razem z danymi, których dotyczą.','Stosuj spójne identyfikatory uczestników, sesji, zadań i przebiegów.'],
-  trap:'Sama poprawna struktura katalogów nie zapewnia reprodukowalności, jeśli brakuje opisu procedury i parametrów przetwarzania.',
+  trap:'Poprawne nazwy plików nie wystarczą: do odtworzenia analizy potrzebne są też parametry filtrów, referencja i opis procedury.',
   task:'Wyjaśnij, jakie trzy elementy BIDS najbardziej pomagają osobie, która nie brała udziału w zbieraniu danych.'
  }
 };
