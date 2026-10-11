@@ -77,7 +77,7 @@ function build(){
  const old=$('#m5');if(old)old.remove();
  dataset=generateData();
  const m=document.createElement('section');m.id='m5';m.className='module preprocessing-workbench';
- m.innerHTML=`<div class="head"><div><div class="eyebrow">PRZETWARZANIE WSTĘPNE</div><h1>Przetwarzanie wstępne EEG</h1><p><b>Cel:</b> przygotować surowy zapis EEG do analizy, ograniczając artefakty bez usuwania użytecznej aktywności. Przechodź kolejno przez kontrolę kanałów, filtrację, referencję, segmentację, kontrolę jakości epok i korekcję linii podstawowej. ICA jest omówiona w osobnym module, ale nie jest wykonywana w tym pipeline. Każda zmiana parametru przelicza ten sam wielokanałowy sygnał i aktualizuje przebieg, widmo, metryki oraz kwalifikację epok.</p></div></div>
+ m.innerHTML=`<div class="head"><div><div class="eyebrow">PRZETWARZANIE WSTĘPNE</div><h1>Przetwarzanie wstępne EEG</h1><p>Przygotuj EEG do analizy: sprawdź kanały, ustaw filtry i referencję, podziel zapis na epoki, odrzuć zakłócone fragmenty i skoryguj linię podstawową. Porównuj przebieg oraz widmo przed i po zmianach. ICA znajduje się w osobnym module.</p></div></div>
  <div class="prep-pipeline" id="prepPipeline">
   <button data-prep-focus="prepInspect"><b>1</b><span>Kontrola danych<small>kanał i interpolacja</small></span></button>
   <button data-prep-focus="prepFilters"><b>2</b><span>Filtry<small>notch + pasmowy</small></span></button>
@@ -144,7 +144,7 @@ function render(m){
  renderEpochs(m,eps);
  renderSummary(m,raw,proc,accepted.length,eps.length);
  const warnings=[];if(state.hp>1)warnings.push('HP > 1 Hz może zniekształcać wolne składowe ERP');if(state.lp<30)warnings.push('LP < 30 Hz może tłumić szybsze składowe');if(state.hp>=state.lp)warnings.push('High-pass musi być niższy niż low-pass');
- $('#prepFilterWarning',m).innerHTML=warnings.length?warnings.map(x=>`<div>⚠ ${x}</div>`).join(''):'Filtry IIR pierwszego rzędu są demonstracyjne; w badaniach ERP parametry, charakterystyka fazowa i efekty brzegowe wymagają osobnej walidacji.';
+ $('#prepFilterWarning',m).innerHTML=warnings.length?warnings.map(x=>`<div>⚠ ${x}</div>`).join(''):'Filtr osłabia wybrane częstotliwości, ale może też przesuwać sygnał w czasie i zniekształcać jego początek lub koniec.';
  const refText={original:'Brak ponownego referencjonowania: zachowane są potencjały względem referencji symulowanego rejestratora.',average:'CAR: w każdej próbce odejmowana jest średnia ze wszystkich pięciu kanałów.',fz:'Referencja Fz: od każdego kanału odejmowany jest jednoczesny potencjał Fz.'};
  $('#prepReferenceNote',m).textContent=refText[state.reference];
  $('#prepSignalNote',m).innerHTML=`Kanał <b>${state.channel}</b> · ${DURATION} s · ${FS} Hz · ${FS*DURATION} próbek. Pionowe znaczniki oznaczają zdarzenia używane do segmentacji.`;
