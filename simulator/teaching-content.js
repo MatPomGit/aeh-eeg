@@ -22,21 +22,21 @@ const LESSONS={
  },
  mfft:{
   title:'Od przebiegu w czasie do widma',
-  intro:'FFT rozkłada fragment EEG na składowe częstotliwościowe. Rozdzielczość widma wynosi około 1/T, gdzie T oznacza długość analizowanego odcinka.',
+  intro:'FFT pokazuje, jak silnie w EEG występują różne częstotliwości, np. rytm alfa około 10 Hz. Im dłuższy analizowany fragment, tym łatwiej odróżnić bliskie częstotliwości: odstęp między punktami widma wynosi 1/T (T w sekundach).',
   observe:['Sprawdź, gdzie występują lokalne maksima mocy i czy odpowiadają rytmom widocznym w przebiegu czasowym.','Porównuj zakresy częstotliwości na odcinkach o tej samej długości.','Pamiętaj, że rozdzielczość częstotliwościowa zależy od długości analizowanego okna.'],
   trap:'Pojedynczy pik w FFT nie jest dowodem na obecność określonego stanu psychicznego ani zaburzenia.',
   task:'Zmień charakter sygnału i przewidź przed spojrzeniem na FFT, w jakiej części widma powinna wzrosnąć moc.'
  },
  mlobes:{
   title:'Topografia nie jest lokalizacją źródła',
-  intro:'Położenie elektrody nie wyznacza jednoznacznie źródła sygnału. Przewodzenie objętościowe sprawia, że jeden kanał zawiera wkład wielu obszarów mózgu.',
+  intro:'Elektroda nad płatem potylicznym nie rejestruje wyłącznie aktywności tego płata. Prąd rozchodzi się przez tkanki głowy, dlatego sygnały z różnych obszarów nakładają się na siebie. To zjawisko nazywamy przewodzeniem objętościowym.',
   observe:['Łącz topografię z funkcją ostrożnie i zawsze uwzględniaj rozchodzenie się pola elektrycznego.','Traktuj związki „płat–funkcja–pasmo” jako heurystykę dydaktyczną, a nie mapę jeden-do-jednego.','Porównuj wzorce przestrzenne wielu kanałów zamiast pojedynczej elektrody.'],
   trap:'Błąd odwrotny EEG jest niedookreślony: ten sam rozkład potencjałów na skórze może być zgodny z wieloma konfiguracjami źródeł.',
   task:'Wybierz jedną funkcję poznawczą i wyjaśnij, dlaczego nie należy przypisywać jej do pojedynczej elektrody.'
  },
  m2x:{
   title:'Montaż decyduje o tym, co widzisz',
-  intro:'Kanał EEG przedstawia różnicę potencjałów między elektrodami. Zmiana referencji zmienia amplitudę i kształt zapisu bez zmiany aktywności mózgu.',
+  intro:'EEG mierzy napięcie jednej elektrody względem drugiej, zwanej referencją. Gdy zmienisz referencję, zmieni się wykres, chociaż mózg pracuje tak samo. Dlatego porównując kanały, trzeba znać montaż.',
   observe:['Sprawdź, które kanały dzielą wspólną referencję.','Oceń, czy rozmieszczenie elektrod pozwala odpowiedzieć na pytanie badawcze.','Rozróżniaj pozycję elektrody, nazwę kanału i sposób referencjonowania.'],
   trap:'„Cisza” w jednym kanale nie oznacza braku aktywności — może wynikać z podobnego potencjału na obu wejściach wzmacniacza.',
   task:'Wyjaśnij, co zmieni się w zapisie po zmianie referencji i co pozostanie niezmienione fizjologicznie.'
@@ -85,14 +85,14 @@ const LESSONS={
  },
  mica:{
   title:'ICA rozdziela mieszaniny statystycznie, nie anatomicznie',
-  intro:'ICA rozdziela EEG na komponenty statystycznie niezależne. Artefakty identyfikuje się na podstawie topografii, przebiegu czasowego i widma komponentu.',
+  intro:'ICA próbuje rozdzielić nakładające się sygnały na składniki, np. aktywność mózgu i mruganie. Nie rozpoznaje ich znaczenia automatycznie: komponent ocenia się po rozmieszczeniu na elektrodach, przebiegu i częstotliwościach.',
   observe:['Szukaj zgodności kilku cech komponentu, np. topografii czołowej, dużych wolnych defleksji i związku z mrugnięciem.','Porównuj dane przed i po rekonstrukcji.','Usuwaj możliwie mało komponentów i dokumentuj kryteria.'],
   trap:'Etykieta automatycznego klasyfikatora komponentów jest podpowiedzią, a nie dowodem.',
   task:'Wybierz komponent artefaktowy i podaj co najmniej dwa niezależne argumenty uzasadniające jego odrzucenie.'
  },
  mpostx:{
   title:'Uśrednianie zmniejsza szum, ale nie tworzy informacji',
-  intro:'Uśrednianie epok wzmacnia składnik powtarzalny względem nieskorelowanego szumu. Przy spełnieniu założeń amplituda szumu średniej maleje około 1/√N.',
+  intro:'Gdy uśrednisz wiele odpowiedzi na ten sam bodziec, powtarzalny sygnał ERP pozostaje, a przypadkowe zakłócenia częściowo się znoszą. Przy niezależnym szumie jego poziom spada w przybliżeniu jak 1/√N, gdzie N to liczba prób.',
   observe:['Zwiększ liczbę prób i śledź stabilizację kształtu ERP lub PSD.','Porównaj zmniejszanie wariancji z zachowaniem sygnału powtarzalnego.','Sprawdź, czy wynik nie jest zdominowany przez kilka odstających prób.'],
   trap:'Duże N nie naprawia systematycznego błędu, np. złych znaczników zdarzeń albo błędnego filtra.',
   task:'Porównaj wynik dla małej i dużej liczby segmentów. Opisz, co się stabilizuje, a co pozostaje niezmienne.'
@@ -106,14 +106,14 @@ const LESSONS={
  },
  mheat:{
   title:'Mapa topograficzna jest interpolacją pomiarów',
-  intro:'Mapa topograficzna przedstawia wartości cechy EEG w elektrodach i interpolację między nimi. Interpretacja wymaga znajomości skali kolorów.',
+  intro:'Kolor w miejscu elektrody odpowiada obliczonej wartości EEG. Między elektrodami program szacuje wartości na podstawie sąsiednich punktów, czyli wykonuje interpolację. Zawsze sprawdzaj skalę kolorów.',
   observe:['Najpierw sprawdź skalę kolorów i jednostkę.','Zwróć uwagę, gdzie rzeczywiście znajdują się elektrody pomiarowe.','Porównuj mapy tylko wtedy, gdy używają zgodnej skali i tego samego sposobu przetwarzania.'],
   trap:'Ostra granica koloru na mapie nie oznacza ostrej granicy neuroanatomicznej.',
   task:'Wyjaśnij, dlaczego ta sama mapa może wyglądać bardziej lub mniej „dramatycznie” po zmianie zakresu skali kolorów.'
  },
  m7:{
   title:'Lokalizacja źródeł to problem odwrotny',
-  intro:'Lokalizacja źródeł EEG rozwiązuje problem odwrotny: szacuje źródła wewnątrz mózgu na podstawie potencjałów na skórze głowy. Wynik zależy od modelu głowy i regularizacji.',
+  intro:'Elektrody mierzą sygnał na powierzchni głowy, a lokalizacja źródeł próbuje ustalić, skąd pochodzi on w mózgu. Wiele różnych źródeł może dać podobny zapis, dlatego algorytm korzysta z modelu głowy i dodatkowych założeń.',
   observe:['Oddziel dane pomiarowe od wyniku modelu.','Sprawdź, jakie założenia ograniczają przestrzeń możliwych rozwiązań.','Traktuj wynik jako estymację zależną od modelu, liczby elektrod i jakości geometrii.'],
   trap:'Najbardziej kolorowy obszar rekonstrukcji nie jest bezpośrednim „zdjęciem aktywnego mózgu”.',
   task:'Wymień dwie informacje dodatkowe, które poprawiają wiarygodność lokalizacji źródła poza samym przebiegiem EEG.'
@@ -141,7 +141,7 @@ const LESSONS={
  },
  mbids:{
   title:'BIDS zamienia zbiór plików w opisany eksperyment',
-  intro:'EEG-BIDS standaryzuje strukturę katalogów, nazewnictwo plików i metadane eksperymentu, ułatwiając analizę oraz wymianę danych.',
+  intro:'EEG-BIDS określa, jak nazywać pliki, gdzie je umieszczać i jak zapisywać opis badania. Dzięki temu inny badacz lub program może odczytać, do kogo należą dane, z jakiego zadania pochodzą i jak je zarejestrowano.',
   observe:['Oddzielaj dane surowe od danych pochodnych.','Trzymaj metadane eksperymentu razem z danymi, których dotyczą.','Stosuj spójne identyfikatory uczestników, sesji, zadań i przebiegów.'],
   trap:'Sama poprawna struktura katalogów nie zapewnia reprodukowalności, jeśli brakuje opisu procedury i parametrów przetwarzania.',
   task:'Wyjaśnij, jakie trzy elementy BIDS najbardziej pomagają osobie, która nie brała udziału w zbieraniu danych.'
