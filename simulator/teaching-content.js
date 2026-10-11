@@ -99,8 +99,8 @@ const LESSONS={
  },
  mqeeg:{
   title:'qEEG: liczby wymagają kontekstu',
-  intro:'qEEG przekształca EEG w cechy ilościowe, np. moc bezwzględną, względną lub wskaźniki między pasmami. Sama kwantyfikacja zwiększa powtarzalność opisu, ale nie nadaje automatycznie wartości diagnostycznej.',
-  observe:['Rozróżniaj moc bezwzględną i względną.','Sprawdź, jak wynik zależy od referencji, preprocessing’u i długości danych.','Interpretuj cechy względem jasno zdefiniowanej normy lub hipotezy badawczej.'],
+  intro:'qEEG przekształca EEG w cechy ilościowe, np. moc bezwzględną, względną lub wskaźniki między pasmami. Kwantyfikacja ułatwia standaryzację opisu, lecz jego powtarzalność zależy od jakości danych i procedury; nie nadaje automatycznie wartości diagnostycznej.',
+  observe:['Rozróżniaj moc bezwzględną i względną.','Sprawdź, jak wynik zależy od referencji, preprocessing’u i długości danych.','Interpretuj cechy względem jasno zdefiniowanej normy lub hipotezy badawczej, uwzględniając wiek, stan czuwania, referencję, artefakty i wielokrotne porównania.'],
   trap:'Wartość odstająca od normy statystycznej nie jest równoznaczna z rozpoznaniem klinicznym.',
   task:'Wybierz jedną cechę qEEG i wypisz trzy czynniki techniczne, które mogą zmienić jej wartość bez zmiany stanu klinicznego.'
  },
