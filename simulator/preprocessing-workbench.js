@@ -77,7 +77,7 @@ function build(){
  const old=$('#m5');if(old)old.remove();
  dataset=generateData();
  const m=document.createElement('section');m.id='m5';m.className='module preprocessing-workbench';
- m.innerHTML=`<div class="head"><div><div class="eyebrow">PRZETWARZANIE WSTĘPNE</div><h1>Przetwarzanie wstępne EEG</h1><p><b>Cel:</b> przygotować surowy zapis EEG do analizy, ograniczając artefakty bez usuwania użytecznej aktywności. Przechodź kolejno przez kontrolę kanałów, filtrację, referencję, segmentację, kontrolę jakości epok, ICA i korekcję linii podstawowej. Każda zmiana parametru przelicza ten sam wielokanałowy sygnał i aktualizuje przebieg, widmo, metryki oraz kwalifikację epok.</p></div></div>
+ m.innerHTML=`<div class="head"><div><div class="eyebrow">PRZETWARZANIE WSTĘPNE</div><h1>Przetwarzanie wstępne EEG</h1><p><b>Cel:</b> przygotować surowy zapis EEG do analizy, ograniczając artefakty bez usuwania użytecznej aktywności. Przechodź kolejno przez kontrolę kanałów, filtrację, referencję, segmentację, kontrolę jakości epok i korekcję linii podstawowej. ICA jest omówiona w osobnym module, ale nie jest wykonywana w tym pipeline. Każda zmiana parametru przelicza ten sam wielokanałowy sygnał i aktualizuje przebieg, widmo, metryki oraz kwalifikację epok.</p></div></div>
  <div class="prep-pipeline" id="prepPipeline">
   <button data-prep-focus="prepInspect"><b>1</b><span>Kontrola danych<small>kanał i interpolacja</small></span></button>
   <button data-prep-focus="prepFilters"><b>2</b><span>Filtry<small>notch + pasmowy</small></span></button>
@@ -90,7 +90,7 @@ function build(){
   <div class="prep-controls">
    <section class="panel" id="prepInspect"><h2><span class="dot"></span>1. Kontrola danych</h2>
     <div class="field"><label>Kanał do podglądu</label><select id="prepChannel">${CHANNELS.map(ch=>`<option ${ch==='Cz'?'selected':''}>${ch}</option>`).join('')}</select></div>
-    <label class="prep-check"><input id="prepInterpolate" type="checkbox" checked><span><b>Interpoluj kanał Cz</b><small>W symulacji Cz zawiera celowo dodany fragment o bardzo dużym szumie. Interpolacja = średnia Fz i Pz.</small></span></label>
+    <label class="prep-check"><input id="prepInterpolate" type="checkbox" checked><span><b>Interpoluj kanał Cz</b><small>W symulacji Cz zawiera celowo dodany fragment o bardzo dużym szumie. Uproszczenie dydaktyczne: średnia Fz i Pz, a nie właściwa przestrzenna interpolacja EEG (np. metodą splajnów sferycznych).</small></span></label>
     <button class="btn" id="prepRegenerate">Wygeneruj nową próbkę</button>
    </section>
    <section class="panel" id="prepFilters"><h2><span class="dot"></span>2. Filtry</h2>
@@ -113,7 +113,7 @@ function build(){
   <div class="prep-results" id="prepResults">
    <section class="panel prep-signal-panel"><div class="prep-panel-head"><h2><span class="dot"></span>Sygnał przed / po</h2><div class="prep-legend"><span class="raw">surowy</span><span class="processed">po preprocessingu</span></div></div><canvas id="prepSignal" width="1100" height="430"></canvas><div class="readout" id="prepSignalNote"></div></section>
    <div class="prep-metrics" id="prepMetrics"></div>
-   <section class="panel"><div class="prep-panel-head"><h2><span class="dot"></span>Widmo mocy 0–60 Hz</h2><div class="prep-legend"><span class="raw">surowy</span><span class="processed">po preprocessingu</span></div></div><canvas id="prepSpectrum" width="1100" height="280"></canvas></section>
+   <section class="panel"><div class="prep-panel-head"><h2><span class="dot"></span>Uproszczone widmo DFT 0–60 Hz (jednostki względne)</h2><div class="prep-legend"><span class="raw">surowy</span><span class="processed">po preprocessingu</span></div></div><canvas id="prepSpectrum" width="1100" height="280"></canvas></section>
    <section class="panel"><h2><span class="dot"></span>Co zmienił pipeline?</h2><div id="prepSummary" class="prep-summary"></div></section>
   </div>
  </div>`;
@@ -144,7 +144,7 @@ function render(m){
  renderEpochs(m,eps);
  renderSummary(m,raw,proc,accepted.length,eps.length);
  const warnings=[];if(state.hp>1)warnings.push('HP > 1 Hz może zniekształcać wolne składowe ERP');if(state.lp<30)warnings.push('LP < 30 Hz może tłumić szybsze składowe');if(state.hp>=state.lp)warnings.push('High-pass musi być niższy niż low-pass');
- $('#prepFilterWarning',m).innerHTML=warnings.length?warnings.map(x=>`<div>⚠ ${x}</div>`).join(''):'Zakres filtrów jest typowy dla demonstracyjnego EEG/ERP.';
+ $('#prepFilterWarning',m).innerHTML=warnings.length?warnings.map(x=>`<div>⚠ ${x}</div>`).join(''):'Filtry IIR pierwszego rzędu są demonstracyjne; w badaniach ERP parametry, charakterystyka fazowa i efekty brzegowe wymagają osobnej walidacji.';
  const refText={original:'Brak ponownego referencjonowania: zachowane są potencjały względem referencji symulowanego rejestratora.',average:'CAR: w każdej próbce odejmowana jest średnia ze wszystkich pięciu kanałów.',fz:'Referencja Fz: od każdego kanału odejmowany jest jednoczesny potencjał Fz.'};
  $('#prepReferenceNote',m).textContent=refText[state.reference];
  $('#prepSignalNote',m).innerHTML=`Kanał <b>${state.channel}</b> · ${DURATION} s · ${FS} Hz · ${FS*DURATION} próbek. Pionowe znaczniki oznaczają zdarzenia używane do segmentacji.`;
@@ -164,7 +164,7 @@ function renderEpochs(m,eps){
 }
 function renderSummary(m,raw,proc,ok,total){
  const line0=toneAmplitude(raw,50),line1=toneAmplitude(proc,50),items=[];
- if(state.interpolate)items.push('Cz: uszkodzony fragment zastąpiono interpolacją Fz/Pz.');
+ if(state.interpolate)items.push('Cz: cały kanał zastąpiono średnią Fz/Pz (wyłącznie demonstracja, nie standardowa interpolacja przestrzenna).');
  if(state.notch)items.push(`Notch 50 Hz: amplituda składowej sieciowej ${line0.toFixed(2)} → ${line1.toFixed(2)} µV.`);
  if(state.hp>0)items.push(`High-pass ${state.hp.toFixed(1)} Hz: redukcja wolnego dryfu.`);
  if(state.lp<100)items.push(`Low-pass ${state.lp} Hz: ograniczenie szybkiej aktywności i szumu powyżej pasma.`);
