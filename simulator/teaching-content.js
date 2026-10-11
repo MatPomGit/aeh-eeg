@@ -173,7 +173,47 @@ function teachingMarkup(x){
  '</div>';
 }
 
+
+// Krótkie cele dydaktyczne widoczne na początku każdego modułu.
+const LEARNING_GOALS={
+ m1x:'Rozpoznasz rytmy EEG, amplitudę w µV i wpływ stanu czuwania na zapis.',
+ mfft:'Wyjaśnisz FFT, rozdzielczość częstotliwościową i różnicę między widmem a PSD.',
+ mlobes:'Powiążesz topografię elektrod z anatomią, bez utożsamiania elektrody ze źródłem korowym.',
+ m2x:'Zrozumiesz system rozmieszczenia elektrod, montaż i rolę referencji.',
+ msimlive2:'Odróżnisz sygnał korowy od artefaktów EOG, EMG i zakłóceń pomiarowych.',
+ mphys2:'Porównasz źródła, jednostki i dynamikę EEG, EKG, EMG oraz EDA.',
+ meye2:'Zinterpretujesz fiksacje, sakkady, ścieżki spojrzenia i ograniczenia heatmap.',
+ m3:'Poznasz paradygmat oddball, znaczniki bodźców oraz interpretację ERP N2/P3.',
+ mstroop:'Zmierzysz interferencję poznawczą na podstawie czasu i poprawności reakcji.',
+ m5:'Prześledzisz filtrację, referencjonowanie, segmentację i kontrolę jakości epok.',
+ mica:'Poznasz założenia ICA i kryteria identyfikacji komponentów artefaktowych.',
+ mpostx:'Zrozumiesz uśrednianie ERP i estymację widmową na wielu segmentach.',
+ mqeeg:'Obliczysz i zinterpretujesz cechy ilościowe EEG, uwzględniając ich ograniczenia.',
+ mheat:'Odczytasz mapę topograficzną i odróżnisz pomiar od interpolacji.',
+ m7:'Wyjaśnisz problem odwrotny i zależność lokalizacji źródeł od modelu głowy.',
+ mclinical:'Rozróżnisz przydatność kliniczną EEG od nieswoistych korelatów grupowych.',
+ mquiz:'Sprawdzisz rozumienie pomiaru, przetwarzania i interpretacji EEG.',
+ mformats:'Dobierzesz format danych i skontrolujesz zachowanie jednostek oraz metadanych.',
+ mbids:'Zorganizujesz zbiór EEG zgodnie z podstawowymi zasadami EEG-BIDS.'
+};
+function insertLearningGoal(id){
+ const module=$('#'+id),goal=LEARNING_GOALS[id];
+ if(!module||!goal||module.querySelector('[data-learning-goal]'))return;
+ const box=document.createElement('div');
+ box.className='panel learning-goal';
+ box.dataset.learningGoal='1';
+ box.style.marginBottom='16px';
+ const h=document.createElement('h2');h.textContent='Czego nauczysz się w tym module?';
+ const p=document.createElement('p');p.textContent=goal;
+ const guide=document.createElement('p');
+ guide.textContent='Najpierw przeczytaj cel, następnie zmieniaj parametry symulatora i porównuj wyniki. Na końcu sprawdź objaśnienia i typowe błędy interpretacyjne.';
+ box.append(h,p,guide);
+ const head=module.querySelector('.head');
+ if(head)head.after(box);else module.prepend(box);
+}
+
 function appendTeaching(id){
+ insertLearningGoal(id);
  const module=$('#'+id),lesson=LESSONS[id];
  if(!module||!lesson||module.querySelector('[data-teaching-extension="1"]'))return;
  module.insertAdjacentHTML('beforeend',teachingMarkup(lesson));
