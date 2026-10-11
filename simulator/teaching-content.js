@@ -153,7 +153,7 @@ function esc(s){
 }
 
 function teachingMarkup(x){
- const observations=x.observe.map(v=>'<li>'+esc(v)+'</li>').join('');
+ const observations=x.observe.slice(0,2).map(v=>'<li>'+esc(v)+'</li>').join('');
  return '<div class="teaching-extension" data-teaching-extension="1">'+
   '<div class="panel">'+
    '<h2><span class="dot"></span>'+esc(x.title)+'</h2>'+
@@ -167,7 +167,7 @@ function teachingMarkup(x){
    '<div class="panel">'+
     '<h2><span class="dot"></span>Sprawdź rozumienie</h2>'+
     '<p>'+esc(x.task)+'</p>'+
-    '<div class="module-note"><b>Najczęstszy błąd interpretacyjny:</b> '+esc(x.trap)+'</div>'+
+    '<div class="module-note"><b>Uwaga:</b> '+esc(x.trap)+'</div>'+
    '</div>'+
   '</div>'+
  '</div>';
@@ -205,9 +205,7 @@ function insertLearningGoal(id){
  box.style.marginBottom='16px';
  const h=document.createElement('h2');h.textContent='Czego nauczysz się w tym module?';
  const p=document.createElement('p');p.textContent=goal;
- const guide=document.createElement('p');
- guide.textContent='Najpierw przeczytaj cel, następnie zmieniaj parametry symulatora i porównuj wyniki. Na końcu sprawdź objaśnienia i typowe błędy interpretacyjne.';
- box.append(h,p,guide);
+ box.append(h,p);
  const head=module.querySelector('.head');
  if(head)head.after(box);else module.prepend(box);
 }
